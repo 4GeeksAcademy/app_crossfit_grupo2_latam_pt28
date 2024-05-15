@@ -17,6 +17,7 @@ import  Home  from "./pages/Home.jsx";
 import  Footer  from "./component/Footer.jsx";
 import  Plans  from "./pages/Plans.jsx";
 import Benefitis from "./pages/Benefitis.jsx"
+import Signup from "./views/User_register.jsx";
 
 
 
@@ -39,7 +40,7 @@ const Layout = () => {
                         <Route element={<Demo />} path="/demo" />
                         <Route element={<Plans />} path="/Plans" />
                         <Route element={<Benefitis />} path="/Benefitis" />
-
+                        <Route element={<Signup />} path="/Signup" />
                         <Route element={<Single />} path="/single/:theid" />
                         <Route element={<h1>Not found!</h1>} />
                     </Routes>

@@ -1,24 +1,22 @@
 import React, { useState, useContext } from 'react'
 import { Context } from "../store/appContext"
+import { useNavigate } from "react-router-dom";
 
 
 const Login = () => {
   const { store, actions } = useContext(Context)
   const [mail, setMail] = useState("")
   const [password, setPassword] = useState("")
-
-  // const [data, setData] = useState({})
-  // const handlerInput = (e) =>{
-
-  //   let value = e.target.value
-  //   setData({...data, [e.target.name]:value}) 
-  // }
+  
+  const navigate = useNavigate();
+  
   const handlerSubmit = async (e) => {
     e.preventDefault()
     if (mail != "" && password != "") {
 
       try {
         await actions.login(mail,password)
+        navigate("/People");
       } catch (error) {
         console.error(error)
       }

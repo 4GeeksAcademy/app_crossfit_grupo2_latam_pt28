@@ -533,8 +533,8 @@ def create_new_normal_user():  # Define la función que manejará la solicitud
             return jsonify({'error': 'Password is required'}), 400  # Devuelve un error con código de estado 400 si 'password' no está presente
 
         # Verifica si se proporcionan las preguntas y respuestas de seguridad en los datos JSON
-        if 'security_questions' not in data or len(data['security_questions']) != 2:
-            return jsonify({'error': 'Security questions and answers are required'}), 400
+        # if 'security_questions' not in data or len(data['security_questions']) != 2:
+        #     return jsonify({'error': 'Security questions and answers are required'}), 400
 
         existing_user = User.query.filter_by(email=data['email']).first()  # Busca un usuario en la base de datos con el mismo email
         if existing_user:  # Verifica si ya existe un usuario con el mismo email
@@ -550,12 +550,12 @@ def create_new_normal_user():  # Define la función que manejará la solicitud
         new_user = User(email=data['email'], password=password_hash, username=data['username'], name=data.get('name'), last_name=data.get('last_name'), role=data.get('role'))
        
         # Agrega las preguntas y respuestas de seguridad al usuario
-        for question_answer in data['security_questions']:
-            new_question = SecurityQuestion(
-                question=question_answer['question'],
-                answer=question_answer['answer']
-            )
-            new_user.security_questions.append(new_question)
+        # for question_answer in data['security_questions']:
+        #     new_question = SecurityQuestion(
+        #         question=question_answer['question'],
+        #         answer=question_answer['answer']
+        #     )
+        #     new_user.security_questions.append(new_question)
     
 
         # Generación del token y envío del correo electrónico
