@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"; // Importación de Link para la navegac
 import { Context } from "../store/appContext"; // Importación del contexto
 import styles from "./Benefits.module.css"; // Importación de estilos CSS
 
-const Benefitis = () => {
+const Benefits = () => {
   return (
     <>
       <div className={styles["container"]}>
@@ -96,4 +96,4 @@ const Benefitis = () => {
   );
 };
 
-export default Benefitis;
+export default Benefits;
