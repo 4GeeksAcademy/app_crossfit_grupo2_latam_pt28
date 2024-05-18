@@ -260,6 +260,7 @@ class Booking(db.Model):
             "booking_id": self.id,
             "booking_date": self.booking_date.isoformat(),  # Usar isoformat para evitar problemas de serialización
             "booking_status": self.status,
+            "user_id": self.user_id,
             "class_id": self.training_class.id,
             "class_name": self.training_class.name,
             "date_class": self.training_class.date_class,
