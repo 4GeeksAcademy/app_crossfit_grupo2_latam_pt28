@@ -22,6 +22,7 @@ import Login from "./component/Login.jsx"; // Importación del componente Navbar
 import PrivatePageUser from "./pages/PrivatePageUser.jsx"; // Importación del componente Navbar
 import Singup from "./component/Singup.jsx"; 
 import BookingView from "./view_master/BookingView.jsx";
+import AdminCoachView from "./view_master/AdminCoachActions.jsx";
 
 
 
@@ -48,6 +49,7 @@ const Layout = () => {
                         <Route element={<Singup />} path="/Singup" />
                         <Route element={<PrivatePageUser />} path="/PrivatePageUser" />
                         <Route element={<BookingView />} path="/AdminBookingView" />
+                        <Route element={<AdminCoachView />} path="/AdminCoachActions" />
                         <Route element={<h1>Not found!</h1>} />
                     </Routes>
                     <Footer />

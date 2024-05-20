@@ -19,6 +19,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 				]
 			},
 			bookingData: [],
+			training_classes_Data: [],
 			creationState: null,
 			createError: [],
 
@@ -141,13 +142,15 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 
+			//funcion asincrona y fetch para vista de reservas(bookings) para admin
 			getBookings: async () => {
 
 				try {
-					const response = await fetch(process.env.BACKEND_URL + "/api/booking", {
+					const response = await fetch(process.env.BACKEND_URL + "api/booking", {
 						headers: { "Content-Type": "application/json" }
 					})
 					const data = await response.json()
+					console.log(data)
 					// Setstore guarda la informacion en este caso un array 
 					setStore({bookingData:data})
 					
@@ -155,6 +158,26 @@ const getState = ({ getStore, getActions, setStore }) => {
 					console.error(error)
 				}
 			},
+
+
+			//funcion asincrona y fetch para vista de clases del coach para admin
+			getClasses: async () => {
+			
+			try {
+				const response = await fetch(process.env.BACKEND_URL + "/api/training_classes", {
+					headers: { "Content-Type": "application/json" }
+				})
+				const data = await response.json()
+				console.log(data)
+				// Setstore guarda la informacion en este caso un array 
+				setStore({training_classes_Data:data})
+				
+			} catch (error) {
+				console.error(error)
+			}
+		},
+
+
 
 
 		}
