@@ -19,6 +19,7 @@ import BookingView from "../component/BookingView.jsx";
 import MembershipPurchase from "../component/MembershipPurchase.jsx";
 import Oneuser from "./Oneuser.jsx";
 import Users from "./Users.jsx";
+import MembershipManager from "../component/MembershipManager.jsx";
 
 const ModulePage = () => {
     const [show, setShow] = useState(false);
@@ -47,6 +48,7 @@ const ModulePage = () => {
         { component: <MembershipPurchase />, name: "MembershipPurchase " },
         { component: <Oneuser />, name: "Oneuser " },
         { component: <Users />, name: "Users " },
+        { component: <MembershipManager />, name: "MembershipManager" },
 
 
 
@@ -56,7 +58,7 @@ const ModulePage = () => {
     return (
         <>
             <h1> Module Page</h1>
-            <Breadcrumbs/>
+            <Breadcrumbs />
             <div className={styles.userDetailsContainer}>
                 {components.map((entry, index) => (
                     <div key={index} className={styles.securityQuestions} onClick={() => handleOpenModal(index)}>

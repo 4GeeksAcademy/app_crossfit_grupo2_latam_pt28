@@ -1,0 +1,29 @@
+.formContainer {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: black;
+
+}
+
+.formContainer input, .formContainer select, .formContainer textarea {
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, .2);
+    border-radius: .3rem;
+    outline: 0;
+    color: #212529;
+    /* align-items: center; */
+}

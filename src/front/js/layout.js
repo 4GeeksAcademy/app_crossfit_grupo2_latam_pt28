@@ -32,6 +32,7 @@ import Breadcrumbs from "./component/Breadcrumb.jsx";
 import BookingView from "./component/BookingView.jsx";
 import Users from "./pages/Users.jsx";
 import Oneuser from "./pages/Oneuser.jsx";
+import MembershipManager from "./component/MembershipManager.jsx";
 
 
 //create your first component
@@ -68,6 +69,8 @@ const Layout = () => {
                         <Route element={<BookingView />} path="/BookingView" />
                         <Route element={<Users />} path="/Users" />
                         <Route element={<Oneuser />} path="/Oneuser" />
+                        <Route element={<MembershipManager />} path="/MembershipManager" />
+
 
                         <Route element={<h1>Not found!</h1>} />
                     </Routes>
