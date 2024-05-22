@@ -223,7 +223,8 @@ class Training_classes(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     instructor = db.Column(db.String(100), nullable=True)
-    dateTime_class = db.Column(db.DateTime)  
+    dateTime_class = db.Column(db.DateTime)
+    Class_is_active = db.Column(db.Boolean(), default=True)  # Columna para el estado de activación de la clase
     start_time = db.Column(db.Time, nullable=False)  # Hora de inicio de la clase
     duration_minutes = db.Column(db.Integer, nullable=False)  # Duración en minutos
     available_slots = db.Column(db.Integer, nullable=False)  # Cupos disponibles en la clase
@@ -239,6 +240,7 @@ class Training_classes(db.Model):
         return {  # Devolver un diccionario con los atributos de la pregunta de seguridad
             "id": self.id,
             "name": self.name,
+            "Class_is_active": self.Class_is_active,
             "dateTime_class": self.dateTime_class,
             "start_time": self.start_time.strftime('%H:%M'),  # Formato de hora como HH:MM
             "duration_minutes": self.duration_minutes,

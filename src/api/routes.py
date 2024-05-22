@@ -13,7 +13,7 @@ from datetime import timedelta  # Importación de timedelta para manejar interva
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
 
-from .booking_service import create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email
+from .booking_service import create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email, cancel_class_and_update_bookings
 
 
 #------------------verificar con david --------------------------------
@@ -98,6 +98,21 @@ def get_users():
         return jsonify(response_body), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@api.route('/user/<int:id>',methods=['GET'])
+# @jwt_required() # Decorador para requerir autenticación con JWT
+def get_Oneuser(id):
+    try:
+        user=User.query.get(id)
+        if not user:
+            return jsonify({'message': 'No users found'}), 404
+        
+        response_body = [user.serialize() for user in user]
+        return jsonify(response_body), 200
+    except Exception as e:
+        return jsonify({'error':str(e)}),500
+
 
 
 #-------------------CONSULTAR UN USUARIO UNICO--------------------------------------------------------------------------
@@ -935,6 +950,28 @@ def update_training_class(class_id):  # Función que maneja la solicitud PUT par
         db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias debido al error.
         return jsonify({'error': str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
 
+#CANCELAR una clase existente (PUT)
+
+@api.route('/cancel_class/<int:class_id>', methods=['PUT'])
+# @jwt_required()
+def cancel_class(class_id):
+    # Buscar la clase por ID
+    training_class = Training_classes.query.get(class_id)
+    if not training_class:
+        return jsonify({'error': 'Class not found'}), 404
+
+    # Verificar si la clase ya está cancelada
+    if not training_class.Class_is_active:
+        return jsonify({'error': 'Class is already cancelled'}), 400
+
+    # Cancelar la clase y actualizar las reservas y clases de los usuarios
+    success, message = cancel_class_and_update_bookings(training_class)
+    if success:
+        return jsonify({'message': message}), 200
+    else:
+        return jsonify({'error': message}), 400
+
+
 
 #Eliminar una clase (DELETE)
 @api.route('/training_classes/<int:class_id>', methods=['DELETE'])  # Define el endpoint para eliminar una clase de entrenamiento específica. Se usa el método DELETE.
@@ -952,7 +989,7 @@ def delete_training_class(class_id):  # Función que maneja la solicitud DELETE 
     except Exception as e:
         db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias debido al error.
         return jsonify({'error': str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
-#
+
 
 #-------------------------------------------------ENPOINT PARA LAS MEMBRESIAS-----------------------------------------------------------
 #Consultar todas las MEMBRESIA (GET)
@@ -1190,10 +1227,3 @@ def purchase_membership_admin(user_email):  # Función que maneja la solicitud P
 
 
 
-@api.route('/user/<int:id>',methods=['GET'])
-def get_Oneuser(id):
-    try:
-        user=User.query.get(id)
-        return jsonify(user.serialize()),200
-    except Exception as e:
-        return jsonify({'error':str(e)}),500

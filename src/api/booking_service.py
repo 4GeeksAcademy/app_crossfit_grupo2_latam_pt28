@@ -11,6 +11,43 @@ mail = Mail()
 #Funciones de Servicio
 #para facilitar la data de los enpoint
 
+#--------------------------------------------------------FUNCION PARA LA CANCELACION DE CLASES------------------------------
+
+def cancel_class_and_update_bookings(training_class):
+    try:
+        # Marcar la clase como no activa
+        training_class.Class_is_active = False  # Se establece la propiedad 'Class_is_active' del objeto 'training_class' a False.
+        
+        # Obtener todas las reservas activas para esta clase
+        bookings = Booking.query.filter_by(training_class_id=training_class.id, status='reserved').all()
+        # Se realiza una consulta a la base de datos para obtener todas las reservas donde el 'training_class_id' 
+        # corresponde al ID de la clase actual y el estado es 'reserved'. Esto retorna una lista de objetos 'Booking'.
+        
+        # Cancelar cada reserva y actualizar la membresía del usuario
+        for booking in bookings:  # Itera sobre cada objeto 'Booking' en la lista 'bookings'.
+            booking.status = 'cancelled'  # Actualiza el estado de cada reserva a 'cancelled'.
+            
+            # Reintegrar la clase a la membresía del usuario
+            membership_history = UserMembershipHistory.query.filter(
+                UserMembershipHistory.user_id == booking.user_id,  # Filtra por 'user_id' de la reserva.
+                UserMembershipHistory.is_active == True,  # Se asegura que la membresía esté activa.
+                UserMembershipHistory.end_date >= datetime.utcnow()  # La membresía no debe haber expirado.
+            ).first()  # Obtiene la primera membresía activa que cumple con las condiciones o None si no hay ninguna.
+            
+            if membership_history and membership_history.remaining_classes is not None:
+                # Si existe una membresía activa y se lleva un conteo de clases disponibles:
+                membership_history.remaining_classes += 1  # Incrementa en uno las clases disponibles.
+        
+        db.session.commit()  # Guarda los cambios realizados en la base de datos.
+        return True, "Class cancelled and bookings updated successfully"  # Retorna True y un mensaje de éxito.
+    except Exception as e:  # Si ocurre alguna excepción durante el proceso:
+        db.session.rollback()  # Deshace todos los cambios si hay un error.
+        return False, "Error cancelling class and updating bookings: {}".format(str(e))
+        # Retorna False y el mensaje de error.
+
+
+
+
 #--------------------------------------------------------FUNCION PARA LA CREACION DE RESERVAS------------------------------
 def create_booking(user_id, training_class_id):
     # Busca la clase de entrenamiento por su ID.
