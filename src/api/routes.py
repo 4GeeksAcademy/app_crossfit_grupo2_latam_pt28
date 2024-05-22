@@ -192,8 +192,8 @@ def create_new_user():  # Define la función que manejará la solicitud
 
 
 #------ actualizar el usuario---------
-@api.route('master/users/<int:user_id>', methods=['PUT'])  # Define un endpoint para actualizar un usuario mediante una solicitud PUT
-# @jwt_required() # Requiere autenticación con JWT para acceder a esta ruta
+@api.route('/users/<int:user_id>', methods=['PUT'])  # Define un endpoint para actualizar un usuario mediante una solicitud PUT
+@jwt_required() # Requiere autenticación con JWT para acceder a esta ruta
 def update_user(user_id):  # Define la función para manejar las solicitudes PUT de actualización de usuario, con el parámetro de ID de usuario
     try:  # Inicia un bloque try-except para manejar posibles errores durante la ejecución
 
@@ -628,6 +628,51 @@ def create_new_normal_user():  # Define la función que manejará la solicitud
     except Exception as e:  # Captura cualquier excepción que ocurra durante el proceso.
         return jsonify({'error': 'Error in user creation: ' + str(e)}), 500  # Devuelve un mensaje de error si ocurre un problema.
 
+#------ actualizar el usuario---------
+@api.route('/user', methods=['PUT'])
+@jwt_required()
+def update_data_user():
+    try:
+        user_id = get_jwt_identity()
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Flag para detectar si las preguntas de seguridad están siendo actualizadas
+        security_questions_updated = 'security_questions' in data and data['security_questions']
+
+        for key, value in data.items():
+            if hasattr(user, key):
+                if key == 'password' and value:
+                    password_hash = generate_password_hash(value).decode('utf-8')
+                    setattr(user, key, password_hash)
+                elif key == 'role' and value:
+                    role = Role.query.filter_by(name=value).first()
+                    if role:
+                        setattr(user, key, role)
+                    else:
+                        return jsonify({'error': 'Role not found'}), 404
+                elif key == 'security_questions' and security_questions_updated:
+                    # Primero elimina las preguntas antiguas solo si se están actualizando
+                    SecurityQuestion.query.filter_by(user_id=user.id).delete()
+                    new_questions = [
+                        SecurityQuestion(question=q['question'], answer=q['answer'], user=user)
+                        for q in value
+                    ]
+                    user.security_questions = new_questions
+                elif key != 'security_questions':
+                    setattr(user, key, value)
+
+        db.session.commit()
+        return jsonify({'message': 'User updated successfully'})
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 #--------------------- activacion de cuenta via email----------------
 @api.route('/confirm/<string:token>', methods=['POST'])  # Define un endpoint para confirmar un email usando un token. El método permitido es POST.
@@ -649,6 +694,28 @@ def confirm_email(token):  # Función que maneja la solicitud POST para confirma
     except:  # Bloque except que captura cualquier excepción no manejada en el bloque try.
         return jsonify(message='The confirmation link is invalid or has expired.'), 400  # Devuelve un mensaje indicando que el enlace de confirmación es inválido o ha expirado, con un código de estado HTTP 400.
 
+
+#-------------------VALIDAR TOKEN  --------------------------------------------------------------------------
+
+@api.route('/validate-token', methods=['GET'])
+@jwt_required()
+def validate_token():
+    try:
+        user_id = get_jwt_identity()  # Obtiene el ID del usuario desde el token
+        user = User.query.get(user_id)  # Busca al usuario por su ID
+
+        if not user:
+            return jsonify({'error': 'User not found'}), 404  # Si el usuario no existe, devuelve error
+
+        # Devuelve la información básica del usuario para confirmar que el token es válido
+        user_info = {
+            'id': user.id,
+            'email': user.email
+        }
+        return jsonify({'message': 'Token is valid', 'user': user_info}), 200  # Devuelve un mensaje de éxito y la información del usuario
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  # En caso de error, devuelve un error interno del servidor
 
 #-------------------CREAR  TOKEN LOGIN--------------------------------------------------------------------------
 @api.route('/token', methods=['POST'])  # Define un endpoint para agregar un nuevo usuario mediante una solicitud POST a la ruta '/users'
@@ -747,11 +814,11 @@ def book_class():  # Función que maneja la solicitud POST para crear una reserv
         if not user.consume_class():  # Intenta consumir una clase del saldo disponible del usuario.
             return jsonify({'error': "No classes left to book"}), 400  # Retorna un error si no quedan clases disponibles para reservar.
         
-        success, message = create_booking(user_id, training_class_id)  # Intenta crear la reserva y recibe un estado de éxito y un mensaje.
+        success, message, booking_id = create_booking(user_id, training_class_id)  # Intenta crear la reserva y recibe un estado de éxito y un mensaje.
         if success:
-            return jsonify({'success': True, 'message': message}), 200  # Si la reserva es exitosa, retorna un mensaje de éxito y un código de estado HTTP 200.
+            return jsonify({'status_booking': True, 'message': message, 'booking_id': booking_id}), 200  # Si la reserva es exitosa, retorna un mensaje de éxito y un código de estado HTTP 200.
         else:
-            return jsonify({'error': message}), 400  # Si falla la reserva, retorna un mensaje de error y un código de estado HTTP 400.
+            return jsonify({'status_booking': False,'error': message}), 400  # Si falla la reserva, retorna un mensaje de error y un código de estado HTTP 400.
         
     except Exception as e:  # Captura cualquier excepción que ocurra durante la ejecución.
         db.session.rollback()  # Realiza un rollback para evitar inconsistencias en la base de datos debido al error.
@@ -766,9 +833,9 @@ def cancel_booking_endpoint(booking_id):  # Función que maneja la solicitud DEL
     try:
         success, message = cancel_booking(booking_id)  # Llama a una función para intentar cancelar la reserva identificada por `booking_id`.
         if success:
-            return jsonify({'message': message}), 200  # Si la cancelación es exitosa, retorna un mensaje de éxito y un código de estado HTTP 200.
+            return jsonify({'message': message, 'status_cancele':True }), 200  # Si la cancelación es exitosa, retorna un mensaje de éxito y un código de estado HTTP 200.
         else:
-            return jsonify({'error': message}), 400  # Si la cancelación falla, retorna un mensaje de error y un código de estado HTTP 400.
+            return jsonify({'error': message, 'status_cancele':False }), 400  # Si la cancelación falla, retorna un mensaje de error y un código de estado HTTP 400.
     
     except Exception as e:  # Captura cualquier excepción que ocurra durante la ejecución.
         db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias como resultado del error.
@@ -793,9 +860,9 @@ def get_training_classes():  # Función que maneja la solicitud GET para obtener
 
 
 
-#Crear una nueva clase (POST)
+#Crear  clases (POST)
 @api.route('/training_classes', methods=['POST'])  # Define el endpoint para crear nuevas clases de entrenamiento. Se usa el método POST.
-# @jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan crear clases.
+@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan crear clases.
 def create_training_classes():  # Función que maneja la solicitud POST para crear clases de entrenamiento.
     data = request.get_json()  # Obtiene los datos enviados en formato JSON.
     if not data:  # Verifica si no se proporcionaron datos.
@@ -810,13 +877,13 @@ def create_training_classes():  # Función que maneja la solicitud POST para cre
         name = item.get('name')
         description = item.get('description')
         instructor_id = item.get('instructor_id')
-        date_class = item.get('date_class')
+        dateTime_class = item.get('dateTime_class')
         start_time = item.get('start_time')
         duration_minutes = item.get('duration_minutes')
         available_slots = item.get('available_slots')
 
         # Verifica que todos los campos necesarios están presentes.
-        if not all([name, date_class, start_time, duration_minutes, available_slots]):
+        if not all([name, dateTime_class, start_time, duration_minutes, available_slots]):
             errors.append({'error': 'Missing data for class', 'class_info': item})  # Agrega un error si falta algún dato.
             continue
 
@@ -825,7 +892,7 @@ def create_training_classes():  # Función que maneja la solicitud POST para cre
                 name=name,
                 description=description,
                 instructor_id=instructor_id,
-                date_class=date_class,
+                dateTime_class=dateTime_class,
                 start_time=start_time,
                 duration_minutes=duration_minutes,
                 available_slots=available_slots
@@ -885,12 +952,12 @@ def delete_training_class(class_id):  # Función que maneja la solicitud DELETE 
     except Exception as e:
         db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias debido al error.
         return jsonify({'error': str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
-
+#
 
 #-------------------------------------------------ENPOINT PARA LAS MEMBRESIAS-----------------------------------------------------------
 #Consultar todas las MEMBRESIA (GET)
 @api.route('/memberships', methods=['GET'])  # Define el endpoint para obtener todas las membresías disponibles. Se usa el método GET.
-# @jwt_required() # Comentado aquí, pero este decorador requeriría autenticación con JWT para acceder a este endpoint.
+@jwt_required() # Comentado aquí, pero este decorador requeriría autenticación con JWT para acceder a este endpoint.
 def get_memberships():  # Función que maneja la solicitud GET para obtener membresías.
     try:
         memberships = Membership.query.all()  # Consulta todas las membresías existentes en la base de datos.
@@ -1034,7 +1101,13 @@ def delete_membership(membership_id):  # Función que maneja la solicitud DELETE
 @api.route('/purchase_membership', methods=['POST'])  # Define el endpoint para la compra de una membresía. Se usa el método POST.
 @jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan realizar compras.
 def purchase_membership():  # Función que maneja la solicitud POST para comprar una membresía.
+    
     user_id = get_jwt_identity()  # Obtiene el ID del usuario autenticado a partir del token JWT.
+    
+    data = request.get_json()  # Obtiene los datos enviados en formato JSON.
+    if not data:  # Verifica si no se proporcionaron datos.
+        return jsonify({'error': 'No data provided'}), 400  # Retorna un mensaje de error si no se proporcionaron datos y un código de estado HTTP 400.
+
     membership_id = request.json.get('membership_id')  # Obtiene el ID de la membresía de los datos de la solicitud.
     payment_data = request.json.get('payment_data')  # Obtiene los datos de pago, que deben incluir 'amount' y 'payment_method'.
 
@@ -1055,7 +1128,7 @@ def purchase_membership():  # Función que maneja la solicitud POST para comprar
             result, message = process_payment(payment_data)  # Procesa el pago con otros métodos.
 
         if result:
-            payment = create_transaction(user_id, membership_id, payment_data['amount'], payment_data['payment_method'])  # Crea una transacción de pago.
+            payment = create_transaction(user_id, membership_id, payment_data)  # Crea una transacción de pago.
             activate_membership(user_id, membership_id, membership.duration_days, membership.classes_per_month)  # Activa la membresía para el usuario.
             return jsonify({'message': 'Purchase successful', 'payment': payment.id}), 200  # Retorna un mensaje de éxito y el ID del pago con un código de estado HTTP 200.
         else:
@@ -1066,3 +1139,61 @@ def purchase_membership():  # Función que maneja la solicitud POST para comprar
         return jsonify({'error': 'Purchase failed: ' + str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
 
 
+#-------------------------------------------------ENPOINT PARA LA COMPRA DE MEMBRESIAS MODULO ADMIN-----------------------------------------------------------
+
+@api.route('/purchase_membership_admin/<string:user_email>', methods=['POST'])  # Define el endpoint para la compra de una membresía. Se usa el método POST.
+@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan realizar compras.
+def purchase_membership_admin(user_email):  # Función que maneja la solicitud POST para comprar una membresía.
+
+    user = User.query.filter_by(email=user_email).first()  # Obtiene el objeto usuario usando el email
+    if not user:  # Verifica si el usuario existe
+        return jsonify({'error': 'User not found'}), 404
+    
+    user_id = user.id  # Obtiene el ID del usuario
+    
+    data = request.get_json()  # Obtiene los datos enviados en formato JSON.
+    if not data:  # Verifica si no se proporcionaron datos.
+        return jsonify({'error': 'No data provided'}), 400  # Retorna un mensaje de error si no se proporcionaron datos y un código de estado HTTP 400.
+
+    membership_id = request.json.get('membership_id')  # Obtiene el ID de la membresía de los datos de la solicitud.
+    payment_data = request.json.get('payment_data')  # Obtiene los datos de pago, que deben incluir 'amount' y 'payment_method'.
+
+    # Validación básica de la presencia de datos necesarios.
+    if not membership_id or not payment_data:
+        return jsonify({'error': 'Missing required parameters'}), 400  # Retorna un mensaje de error si faltan parámetros requeridos y un código de estado HTTP 400.
+
+    membership = Membership.query.get(membership_id)  # Busca la membresía en la base de datos usando el ID proporcionado.
+    if not membership:
+        return jsonify({'error': 'Membership not found'}), 404  # Retorna un mensaje de error si la membresía no se encuentra y un código de estado HTTP 404.
+
+    try:
+        # Procesamiento de pago diferenciado por método.
+        if payment_data['payment_method'] == 'cash':
+            message = 'Payment recorded, pending verification'  # Mensaje para pagos en efectivo.
+            result = True  # Asumimos que el pago en efectivo siempre es exitoso.
+        else:
+            result, message = process_payment(payment_data)  # Procesa el pago con otros métodos.
+
+        if result:
+            payment = create_transaction(user_id, membership_id, payment_data)  # Crea una transacción de pago.
+            activate_membership(user_id, membership_id, membership.duration_days, membership.classes_per_month)  # Activa la membresía para el usuario.
+            return jsonify({'message': 'Purchase successful', 'payment': payment.id}), 200  # Retorna un mensaje de éxito y el ID del pago con un código de estado HTTP 200.
+        else:
+            return jsonify({'error': message}), 400  # Retorna un mensaje de error si el proceso de pago falla y un código de estado HTTP 400.
+
+    except Exception as e:
+        db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias debido al error.
+        return jsonify({'error': 'Purchase failed: ' + str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
+
+
+
+
+
+
+@api.route('/user/<int:id>',methods=['GET'])
+def get_Oneuser(id):
+    try:
+        user=User.query.get(id)
+        return jsonify(user.serialize()),200
+    except Exception as e:
+        return jsonify({'error':str(e)}),500

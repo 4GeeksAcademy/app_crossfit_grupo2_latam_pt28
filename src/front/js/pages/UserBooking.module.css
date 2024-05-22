@@ -2,28 +2,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    /* padding: 20px; */
 }
 
-.userDetailsCard, .securityQuestions {
-    background-color: #f3f4f6;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    padding: 20px;
-    margin: 10px;
-    width: 90%;
-    max-width: 600px;
-}
 
-.userDetailsCard h2, .securityQuestions h3 {
-    color: #333;
-    margin-bottom: 15px;
-}
-
-.userDetailsCard p, .securityQuestions p {
-    color: #666;
-    line-height: 1.6;
-}
 
 .loading {
     font-size: 16px;
@@ -41,10 +23,24 @@
     margin-top: 20px;
     padding: 15px;
     border-radius: 8px;
+    font-size: small;
+
+}
+
+.bookingsContainer h3 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.bookingsContainer h4 {
+    color: #333;
+    font-size: 1rem;
+    margin-bottom: 15px;
 }
 .bookingInfo p {
     color: #666;
-    line-height: 1.6;
+    margin: 0;
 }
 
 .bookingsList {
@@ -57,13 +53,14 @@
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 10px 4px 1px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
 .bookingInfo {
+    font-size: smaller;
     flex: 1; /* Asegura que tome todo el espacio disponible menos el botón */
 }
 

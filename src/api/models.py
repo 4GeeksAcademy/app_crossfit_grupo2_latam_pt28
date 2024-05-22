@@ -28,6 +28,7 @@ class User(db.Model):  # Define una clase que representa la tabla de usuarios en
     # Relaciones sin eliminar en cascada para Membership History y Payments
     memberships_history = db.relationship('UserMembershipHistory', backref='user', lazy='dynamic')
     payments = db.relationship('Payment', backref='user', lazy=True)
+    bookings = db.relationship('Booking', backref='user', lazy=True)
 
     #NOTA: siempre que se haga un eliminacion de base de datos se debe comentar active_membership_id y active_membership ya que tiene una relacion circular y una depende de otra
 
@@ -68,6 +69,8 @@ class User(db.Model):  # Define una clase que representa la tabla de usuarios en
     
     def serialize(self):  # Método para serializar un objeto de usuario a un diccionario JSON
         active_membership = self.get_active_membership()  # Obtiene la membresía activa usando el nuevo método
+        active_status = "Activa" if active_membership and active_membership.is_active else "No Activa"
+
         return {  # Devolver un diccionario con los atributos del usuario
             "id": self.id,
             "email": self.email,
@@ -84,10 +87,12 @@ class User(db.Model):  # Define una clase que representa la tabla de usuarios en
             "register_date": self.registration_date.isoformat(),  # Formato ISO de la fecha
             "account_update": self.last_update_date.isoformat(),  # Formato ISO de la fecha
             "active_membership_is_active": active_membership.is_active if active_membership else "N/A",
+            "active_membership_is_active": active_status,
             "membership_start_date": active_membership.start_date.isoformat() if active_membership else "N/A",
             "membership_end_date": active_membership.end_date.isoformat() if active_membership else "N/A",
             "membership_description": active_membership.membership.description if active_membership and active_membership.membership else "N/A",
             "membership_remaining_classes": active_membership.remaining_classes if active_membership else "N/A",
+            "bookings": [booking.serialize() for booking in self.bookings]
         }
 
     
@@ -218,13 +223,14 @@ class Training_classes(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
     instructor = db.Column(db.String(100), nullable=True)
-    date_class = db.Column(db.Date)  # Día de la semana (e.g., Lunes, Martes, etc.)
+    dateTime_class = db.Column(db.DateTime)  
     start_time = db.Column(db.Time, nullable=False)  # Hora de inicio de la clase
     duration_minutes = db.Column(db.Integer, nullable=False)  # Duración en minutos
     available_slots = db.Column(db.Integer, nullable=False)  # Cupos disponibles en la clase
     instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Foreign key para el instructor
     
     instructor = db.relationship("User")  # Relación con la tabla de usuarios
+    bookings = db.relationship('Booking', back_populates='training_class', lazy=True)
 
     def __repr__(self):  # Método para representar un objeto de pregunta de seguridad como una cadena
         return '<Training_classes %r>' % self.id
@@ -233,11 +239,14 @@ class Training_classes(db.Model):
         return {  # Devolver un diccionario con los atributos de la pregunta de seguridad
             "id": self.id,
             "name": self.name,
-            "date_class": self.date_class,
+            "dateTime_class": self.dateTime_class,
             "start_time": self.start_time.strftime('%H:%M'),  # Formato de hora como HH:MM
             "duration_minutes": self.duration_minutes,
             "instructor":self.instructor.name if self.instructor else "",
             "available_slots": self.available_slots,
+            "description": self.description,
+            "bookings": [booking.user.serialize() for booking in self.bookings if booking.user]
+
         }
 
 #--------------- tabla de reservaciones------------------------
@@ -249,8 +258,8 @@ class Booking(db.Model):
     booking_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(50), nullable=True,  default='avaible')  # Por ejemplo: 'reserved', 'completed', 'cancelled'
 
-    user = db.relationship("User")
-    training_class = db.relationship("Training_classes")
+    training_class_id = db.Column(db.Integer, db.ForeignKey('training_classes.id'), nullable=False)
+    training_class = db.relationship("Training_classes", back_populates="bookings")
 
     def __repr__(self):
         return '<Booking %r>' % self.id
@@ -258,15 +267,16 @@ class Booking(db.Model):
     def serialize(self):
         return {
             "booking_id": self.id,
-            "booking_date": self.booking_date.isoformat(),  # Usar isoformat para evitar problemas de serialización
+            "booking_date": self.booking_date.isoformat(),
             "booking_status": self.status,
-            "user_id": self.user_id,
-            "class_id": self.training_class.id,
-            "class_name": self.training_class.name,
-            "date_class": self.training_class.date_class,
-            "class_start_time": self.training_class.start_time.isoformat(),
-            "class_instructor": self.training_class.instructor.name  # Asumiendo que 'instructor' también es un objeto serializable
+            "booking_user_name": self.user.name,
+            "class_id": self.training_class.id if self.training_class else None,
+            "class_name": self.training_class.name if self.training_class else "No Class",
+            "dateTime_class": self.training_class.dateTime_class.isoformat() if self.training_class else None,
+            "class_start_time": self.training_class.start_time.strftime('%H:%M') if self.training_class else None,
+            "class_instructor": self.training_class.instructor.name if self.training_class and self.training_class.instructor else "No Instructor"
         }
+
 
     
 # Tabla de Transacciones
@@ -274,12 +284,20 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     membership_id = db.Column(db.Integer, db.ForeignKey('membership.id'), nullable=False)
-    payment_date = db.Column(db.DateTime, default=datetime.utcnow)  # Fecha de la transacción
+    payment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    confirmation_date = db.Column(db.DateTime)  # Fecha de confirmación del pago
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(50), nullable=False)
+    transaction_reference = db.Column(db.String(255))  # Referencia externa
+    currency = db.Column(db.String(3), default='USD')  # Moneda
+    description = db.Column(db.String(255))  # Descripción del pago
+    card_number_last4 = db.Column(db.String(4))  # Últimos cuatro dígitos del número de tarjeta
+    card_type = db.Column(db.String(255))  # almacenar marca de la tarjeta
+    cardholder_name = db.Column(db.String(255))  # Nombre del titular de la tarjeta
 
     payment_details = db.relationship('PaymentDetail', backref='payment', lazy=True)
+
 
     def __repr__(self):  # Método para representar un objeto de pregunta de seguridad como una cadena
         return '<Payment %r>' % self.id
@@ -299,8 +317,13 @@ class Payment(db.Model):
 class PaymentDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     payment_id = db.Column(db.Integer, db.ForeignKey('payment.id'), nullable=False)
+    product_id = db.Column(db.Integer, nullable=False)  # ID del producto o servicio
+    product_description = db.Column(db.String(255))
     quantity = db.Column(db.Integer, nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)
     subtotal = db.Column(db.Float, nullable=False)
+    tax_amount = db.Column(db.Float, nullable=False, default=0.0)
+    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
 
     def __repr__(self):  # Método para representar un objeto de pregunta de seguridad como una cadena
         return '<PaymentDetail %r>' % self.id

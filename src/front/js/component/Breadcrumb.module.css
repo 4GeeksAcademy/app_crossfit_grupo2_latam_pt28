@@ -1,0 +1,16 @@
+.breadcrumb {
+    background-color: #f8f9fa; /* Color de fondo claro */
+    padding: 10px 15px; /* Espaciado */
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: #6c757d; /* Color de los separadores */
+}
+
+.breadcrumb-item a {
+    color: #6c757d; /* Color de los enlaces */
+}
+
+.breadcrumb-item.active {
+    color: #495057; /* Color del ítem activo */
+}

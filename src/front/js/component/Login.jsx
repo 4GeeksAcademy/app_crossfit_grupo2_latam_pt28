@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useEffect, useState } from 'react';
 import styles from "./Login.module.css"; // Asegúrate de tener este archivo de estilos o ajusta el nombre según necesites
 import { Link, useNavigate } from "react-router-dom";
 import { Context } from "../store/appContext";
@@ -6,25 +6,42 @@ import { Context } from "../store/appContext";
 const Login = () => {
     const { actions, store } = useContext(Context);
     const navigate = useNavigate();
+    
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleLogin = async (e) => { // Función para manejar el inicio de sesión
-        e.preventDefault(); // Previene el comportamiento por defecto del formulario
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        await actions.loginUserV2(email, password);
+        await actions.loadUserData();
 
-        try {
-            await actions.loginUserV2(email, password)
-                if (store.isAuthenticated) {
-                    if(store.isAuthenticated == true)
-                    await actions.loadUserData(); // Llamada a la acción loadUserData para cargar los datos del usuario
-                    navigate("/PrivatePageUser"); // Ajusta esta ruta según donde quieras redirigir al usuario tras el login
-                }
-        } catch (error) {
-            // console.error('Error:', error);
-            // Manejar el error de alguna manera, por ejemplo, mostrando un mensaje al usuario
+        // Verificar el estado después de que se haya actualizado
+        if (store.isAuthenticated && store.dataRole) {
+            if (store.dataRole === "athlete") {
+                navigate("/PrivatePageUser");
+            }else if (store.dataRole === "coach") {
+                navigate("/PrivatePageUser"); 
+            }else if (store.dataRole === "admin") {
+                navigate("/PrivatePageUser"); 
+            }else if (store.dataRole === "master") {
+                navigate("/ModulePage"); 
+            }else {
+                navigate("/");
+            }
         }
     };
+
+    // useEffect(() => {
+    //     if (store.isAuthenticated && store.dataRole) {
+    //         if (store.dataRole === "athlete") {
+    //             navigate("/PrivatePageUser");
+    //         } else {
+    //             navigate("/Master-private-registration");
+    //         }
+    //     }
+    // }, [store.isAuthenticated, store.dataRole, navigate]);
+
 
 
     const renderLoginResponse = () => { // Función para renderizar la respuesta del inicio de sesión
@@ -61,7 +78,7 @@ const Login = () => {
                     <input type="password" name="password" value={password.trim()} onChange={e => setPassword(e.target.value)} required />
                 </label>
                 <button type="submit" className={styles.submitButtonLogin}>Iniciar sesión</button>
-                <Link to="/login-help">¿Olvidaste la contraseña?</Link>
+                <Link to="/Master-private-registration">¿Olvidaste la contraseña?</Link>
                 <div className="rememberMe">
                     <input type="checkbox" />
                     <span>Recuérdame</span>

@@ -1,0 +1,40 @@
+.editButton {
+    background-color: #7f7f7f; /* Gray */
+    border: none;
+}
+
+.modal {
+    color: #383838; /* Charcoal */
+}
+
+.modalHeader {
+    background-color: #9a9a9a;
+}
+
+.modalTitle {
+    color: #373737; /* Dark Gray */
+}
+
+.modalBody {
+    background-color: #bebebe;
+}
+
+.modalFooter {
+    background-color: #9a9a9a;
+}
+
+.closeButton, .saveButton {
+    border-radius: 0;
+    border: none;
+}
+
+.form-control {
+    margin-bottom: 10px;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input:focus, input:valid {
+    outline: none;
+    border: 1.5px solid #b8b8b8 !important; /* Añade !important para forzar la aplicación de esta regla */
+}

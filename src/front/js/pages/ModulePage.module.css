@@ -1,0 +1,66 @@
+.userDetailsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    padding: 20px;
+}
+
+.securityQuestions {
+    background-color: #f3f4f6;
+    color: gray;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin: 10px;
+    width: calc(33% - 20px);
+    cursor: pointer;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .securityQuestions {
+        width: calc(50% - 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .securityQuestions {
+        width: 100%;
+    }
+}
+
+.sliderContent {
+    padding: 20px;
+    text-align: center;
+}
+
+.modalCustom .modal-content {
+    background-color: #f3f4f6;
+    color: gray;
+}
+
+.modalHeader {
+    border-bottom: 1px solid #dee2e6; /* Utiliza los colores según tu diseño */
+}
+
+.modalTitle {
+    color: rgb(85, 83, 83); /* Ajusta según necesites */
+}
+
+.modalBody {
+    padding: 20px;
+}
+
+.modalContent {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    /* width: 100%; */
+    pointer-events: auto;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, .2);
+    border-radius: .3rem;
+    outline: 0;
+}
+
