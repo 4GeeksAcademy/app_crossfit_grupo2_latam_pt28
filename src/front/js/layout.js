@@ -30,6 +30,7 @@ import CreateClasses from "./component/CreateClasses.jsx";
 import ModulePage from "./pages/ModulePage.jsx";
 import Breadcrumbs from "./component/Breadcrumb.jsx";
 import BookingView from "./component/BookingView.jsx";
+
 import Users from "./pages/Users.jsx"; // revisar
 import Oneuser from "./pages/Oneuser.jsx"; // revisar
 // import Homeadmin from "./pages/Homeadmin.jsx"; // revisar

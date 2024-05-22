@@ -473,7 +473,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				try {
 					let response = await fetch(url, {
-						method: "GET", // Método de la solicitud
+						method: "PUT", // Método de la solicitud
 						headers: {
 							'Content-Type': 'application/json',
 							'Authorization': `Bearer ${myToken}`, // Asegúrate de manejar la autenticación adecuadamente
