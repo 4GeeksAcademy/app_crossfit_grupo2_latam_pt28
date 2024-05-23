@@ -5,6 +5,7 @@ import moment from 'moment';
 import { Context } from '../store/appContext'; // Asegúrate de ajustar la ruta al contexto
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import styles from './PrivateCalendar.module.css'; // Asegúrate de que la ruta al CSS es correcta
+// import MembershipManager from './MembershipManager.jsx';
 
 const localizer = momentLocalizer(moment);
 
@@ -15,9 +16,9 @@ const PrivateCalendar = () => {
 
     
 
-    useEffect(() => {
-        actions.loadTrainingClasses(); // Carga las clases al montar el componente
-    }, []);
+    // useEffect(() => {
+    //     actions.loadTrainingClasses(); // Carga las clases al montar el componente
+    // }, [actions]);
 
     const events = store.trainingClasses.map(event => ({
         ...event,
@@ -74,6 +75,7 @@ const PrivateCalendar = () => {
     
 
     return (
+        <>
         <div className={styles.container}>
             <div className={styles.myCalendar}>
                 <h2>Calendario Privado</h2>
@@ -147,6 +149,8 @@ const PrivateCalendar = () => {
                 </Modal>
             )}
         </div>
+        {/* <MembershipManager/> */}
+        </>
     );
 };
 

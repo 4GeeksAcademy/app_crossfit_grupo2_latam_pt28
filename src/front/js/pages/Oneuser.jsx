@@ -13,7 +13,7 @@ const Oneuser = () => {
   const { store, actions } = useContext(Context)
   useEffect(() => {
     actions.getOneuser(params.id)
-  }, [])
+  }, [actions])
   console.log(store.user)
   return (
     <div className="container d-flex justify-content-center">

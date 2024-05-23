@@ -14,9 +14,9 @@ const MyCalendar = () => {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
-    useEffect(() => {
-        actions.loadTrainingClasses(); // Carga las clases al montar el componente
-    }, []);
+    // useEffect(() => {
+    //     actions.loadTrainingClasses(); // Carga las clases al montar el componente
+    // }, []);
 
     const events = store.trainingClasses.map(event => ({
         ...event,

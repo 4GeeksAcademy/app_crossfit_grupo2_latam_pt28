@@ -22,7 +22,7 @@ const UserBooking = () => {
         };
 
     const handleCancelBooking = async (bookingId) => {
-        const result = await actions.cancel_booking(bookingId);
+        await actions.cancel_booking(bookingId);
         if (store.cancelBooking.message) {
             setModalMessage(store.cancelBooking.message);
             setModalVisible(true);
@@ -41,9 +41,9 @@ const UserBooking = () => {
         // }
     };
 
-    useEffect(() => {
-        actions.loadUserData(); // Carga las clases al montar el componente
-    }, []);
+    // useEffect(() => {
+    //     actions.loadUserData(); // Carga las clases al montar el componente
+    // }, []);
 
 
 

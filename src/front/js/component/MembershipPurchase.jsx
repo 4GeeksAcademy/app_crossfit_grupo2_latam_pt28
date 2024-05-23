@@ -18,9 +18,9 @@ const MembershipPurchase = () => {
     const [processing, setProcessing] = useState(false);
     const [purchaseResult, setPurchaseResult] = useState(null);
 
-    useEffect(() => {
-        actions.loadMemberships();
-    }, []);
+    // useEffect(() => {
+    //     actions.loadMemberships();
+    // }, []);
 
     const handleBuyClick = () => {
         if (store.uploadedUserData.active_membership_is_active !== "No Activa") {

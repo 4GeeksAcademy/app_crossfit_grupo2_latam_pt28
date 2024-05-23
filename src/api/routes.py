@@ -930,28 +930,42 @@ def create_training_classes():  # Función que maneja la solicitud POST para cre
 
 
 #Modificar una clase existente (PUT)
-@api.route('/training_classes/<int:class_id>', methods=['PUT'])  # Define el endpoint para actualizar una clase de entrenamiento específica. Se usa el método PUT.
-@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan actualizar clases.
-def update_training_class(class_id):  # Función que maneja la solicitud PUT para actualizar una clase de entrenamiento.
-    data = request.get_json()  # Obtiene los datos enviados en formato JSON.
-    training_class = Training_classes.query.get_or_404(class_id)  # Busca la clase de entrenamiento en la base de datos o retorna un error 404 si no se encuentra.
-
+# {
+#     "name": "Yoga Advanced",
+#     "description": "A class for advanced yoga practitioners.",
+#     "instructor_id": 2,
+#     "dateTime_class": "2024-06-15T08:00:00",
+#     "start_time": "08:00:00",
+#     "duration_minutes": 90,
+#     "available_slots": 15,
+# }
+@api.route('/training_classes/<int:class_id>', methods=['PUT'])
+@jwt_required()
+def update_training_class(class_id):
     try:
-        if 'name' in data:  # Verifica si el nombre está presente en los datos recibidos.
-            training_class.name = data['name']  # Actualiza el nombre de la clase de entrenamiento.
-        if 'description' in data:  # Verifica si la descripción está presente en los datos recibidos.
-            training_class.description = data['description']  # Actualiza la descripción de la clase de entrenamiento.
-        if 'available_slots' in data:  # Verifica si el número de plazas disponibles está presente en los datos recibidos.
-            training_class.available_slots = data['available_slots']  # Actualiza el número de plazas disponibles en la clase de entrenamiento.
+        data = request.get_json()  # Asegúrate de que esto esté importado y configurado correctamente.
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400  # Mensaje claro sobre la falta de datos.
 
-        db.session.commit()  # Guarda los cambios en la base de datos.
-        return jsonify({'message': 'Training class updated successfully'}), 200  # Retorna un mensaje de éxito y un código de estado HTTP 200.
+        training_class = Training_classes.query.get(class_id)  # Recupera la clase usando el ID.
+        if not training_class:
+            return jsonify({'error': 'Training class not found'}), 404  # Error si la clase no se encuentra.
+
+        # Itera sobre cada campo en el JSON y actualiza la clase si corresponde.
+        for key, value in data.items():
+            if hasattr(training_class, key):  # Comprueba si la clase tiene un atributo con el nombre de la llave.
+                setattr(training_class, key, value)  # Establece el valor solo si la clase tiene ese atributo.
+
+        db.session.commit()  # Confirma los cambios en la base de datos.
+        return jsonify({'message': 'Training class updated successfully'}), 200  # Retorna un mensaje de éxito.
+
     except Exception as e:
-        db.session.rollback()  # Realiza un rollback en la base de datos para evitar inconsistencias debido al error.
-        return jsonify({'error': str(e)}), 500  # Retorna un mensaje de error con el código de estado HTTP 500 (Error Interno del Servidor).
+        db.session.rollback()  # Asegúrate de revertir cualquier cambio si ocurre un error.
+        return jsonify({'error': 'Error updating training class: ' + str(e)}), 500  # Mensaje de error con el error específico.
+
+
 
 #CANCELAR una clase existente (PUT)
-
 @api.route('/cancel_class/<int:class_id>', methods=['PUT'])
 # @jwt_required()
 def cancel_class(class_id):

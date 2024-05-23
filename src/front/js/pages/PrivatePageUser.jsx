@@ -3,56 +3,27 @@ import { Link } from "react-router-dom"; // Importación de Link para la navegac
 import { Context } from "../store/appContext"; // Importación del contexto
 import styles from "./PrivatePageUser.module.css"; // Importación de estilos CSS
 
-import PrivateCalendar from "/workspaces/app_gestion_gym_crossfit_proyecto_final_pt28/src/front/js/component/PrivateCalendar.jsx"
+import PrivateCalendar from "../component/PrivateCalendar.jsx";
 import MembershipPurchase from "../component/MembershipPurchase.jsx";
+import EditProfile from "../component/EditProfile.jsx";
 
 
 const PrivatePageUser = () => {
     const { store, actions } = useContext(Context); // Usar useContext para acceder al contexto global
     const { uploadedUserData } = store; // Suponiendo que uploadedUserData contiene el objeto del usuario
 
-    // estados para el modal
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalMessage, setModalMessage] = useState("");
-
     // Verificar si uploadedUserData contiene datos
     if (!uploadedUserData) {
         return <div className={styles.loading}>Cargando datos del usuario...</div>;
     }
 
+    // useEffect(() => {
+    //     actions.loadUserData(); // Carga las clases al montar el componente
+    // }, []);
 
-    const handleCancelBooking = async (bookingId) => {
-        const result = await actions.cancel_booking(bookingId);
-        if (result) {
-            setModalMessage(store.cancelBooking.message);
-            setModalVisible(true);
-        } else {
-            setModalMessage(store.cancelBooking.error);
-            setModalVisible(true);
-        }
-    };
-
-
-    const handleModalClose = () => {
-        setModalVisible(false);
-        // SI QUEREMOS QUE HAGA ALGO DESPUES
-        // if (store.creationState.message) {
-        //     navigate("/Login");
-        // }
-    };
-
-    useEffect(() => {
-        actions.loadUserData(); // Carga las clases al montar el componente
-    }, []);
-
-
-
-    
-
-    // Renderizar los detalles del usuario
     return (
         <>
-            <div className={styles.userDetailsContainer}>
+            {/* <div className={styles.userDetailsContainer}>
                 <div className={styles.userDetailsCard}>
                     <h2>Detalles del Usuario</h2>
                     <p><strong>ID:</strong> {uploadedUserData.id}</p>
@@ -95,24 +66,8 @@ const PrivatePageUser = () => {
 
                     </div>
                 </div>
-            </div>
+            </div> */}
             <PrivateCalendar />
-            {/* Modal */}
-            <div className={`modal fade ${modalVisible ? 'show' : ''}`} style={{ display: modalVisible ? 'block' : 'none' }} tabIndex="-1" id={styles["modal"]}>
-                <div className="modal-dialog">
-                    <div className={styles["modal-content"]}>
-                        <div className="modal-header">
-                            <h5 className="modal-title">Registration Status</h5>
-                        </div>
-                        <div className="modal-body">
-                            <p>{modalMessage}</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={handleModalClose}>Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div> 
 
         </>
     );
