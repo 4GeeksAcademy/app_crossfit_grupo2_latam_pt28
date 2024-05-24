@@ -22,10 +22,11 @@
 
   
   .headerTitle {
-    color: #5f5f5f;
+    /* color: #5f5f5f; */
+    color: #333;
     font-size: 90px;
     font-weight: 900;
-    text-shadow: 1px 1px 3px rgb(0, 0, 0);
+    text-shadow: 1px 1px 3px #e9ecef;
   }
   
   .content {

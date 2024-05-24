@@ -1,0 +1,51 @@
+.uploadFormContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* min-height: 100vh; */
+    background-color: #f0f2f5;
+    padding: 10px;
+}
+
+.uploadForm {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.uploadlabel {
+    color: #6c6c6c;
+    font: 12px;
+}
+
+.heading {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
+.uploadButton {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.uploadButton:hover {
+    background-color: #0056b3;
+}
+
+.message {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #333;
+}

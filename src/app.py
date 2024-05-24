@@ -17,6 +17,11 @@ from api.commands import setup_commands  # Importar la función para configurar 
 #------------------verificar con david --------------------------------
 from werkzeug.utils import secure_filename # importacion de secure_filename para manejar imagen
 
+UPLOAD_FOLDER = '/path/to/the/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+
+
 
 # Importar JWTManager para manejar la autenticación JWT
 from flask_jwt_extended import JWTManager
@@ -39,6 +44,9 @@ app.url_map.strict_slashes = False  # Configurar para permitir rutas sin barra a
 jwt = JWTManager(app)  # Inicializar JWTManager con la aplicación Flask
 app.config["JWT_SECRET_KEY"] = os.getenv("KEY_JWT")  # Definir la clave secreta para JWT  se obtiene desde el archivo .env (debes cambiarla por una clave segura)
 
+#---------------------------------PARA LA CARGA DE IMAGENES---------------------------------------------------------------------
+#Configuración en tu aplicación Flask:
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # por ejemplo, 16 megabytes
 
 
 #------------------------seccion de envio de email----------------------------------------------
@@ -60,7 +68,7 @@ mail = Mail(app)
 #------------------verificar con david --------------------------------
 app.config['UPLOAD_FOLDER'] = 'path/to/upload/directory'  # Asegúrate de que este directorio exista y tenga permisos adecuados
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB de tamaño máximo de archivo
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+# ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 
 # Configurar la base de datos

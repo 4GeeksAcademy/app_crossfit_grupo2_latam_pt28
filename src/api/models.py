@@ -1,4 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy  # Importación del módulo SQLAlchemy para interactuar con la base de datos
+from sqlalchemy import LargeBinary
+
+
 from datetime import datetime  # Importación del módulo datetime para trabajar con fechas y horas
 import json  # Importación del módulo json para trabajar con datos en formato JSON
 db = SQLAlchemy()
@@ -209,7 +212,7 @@ class UserMembershipHistory(db.Model):
             "history_membership_id": self.id,
             "membership_id": self.membership_id,
             "user_id": self.user_id,
-            "user_name": self.user.name,
+            "user_name": self.user.name if self.user_id else "",
             "start_date": self.start_date,
             "end_date": self.end_date,
             "remaining_classes": self.remaining_classes,
@@ -332,3 +335,18 @@ class PaymentDetail(db.Model):
 
 
 
+class MovementImages(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    img_data = db.Column(LargeBinary, nullable=False)
+
+    def __repr__(self):  # Método para representar un objeto de pregunta de seguridad como una cadena
+        return '<MovementImages %r>' % self.id
+    
+    def serialize(self):  # Método para serializar un objeto de pregunta de seguridad a un diccionario JSON
+        return {  # Devolver un diccionario con los atributos de la pregunta de seguridad
+            "img_id": self.id,
+            "name": self.name,
+            "description": self.description
+        }

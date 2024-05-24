@@ -1,79 +1,98 @@
+// Importa las dependencias necesarias de React y React-Bootstrap
 import React, { useState, useContext, useEffect } from 'react';
 import { Modal, Button, Form, DropdownButton, Dropdown, Alert } from 'react-bootstrap';
 import { Context } from '../store/appContext';
-import styles from "./MembershipPurchase.module.css";
+import styles from "./MembershipPurchase.module.css"; // Importa los estilos CSS
 
+// Define el componente de compra de membresía
 const MembershipPurchase = () => {
-    const { store, actions } = useContext(Context);
-    const [showSelectionModal, setShowSelectionModal] = useState(false);
-    const [selectedMembership, setSelectedMembership] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState('');
+    const { store, actions } = useContext(Context); // Obtiene el estado global y las acciones del contexto
+    const [showSelectionModal, setShowSelectionModal] = useState(false); // Estado para mostrar el modal de selección de membresía
+    const [selectedMembership, setSelectedMembership] = useState(null); // Estado para la membresía seleccionada
+    const [paymentMethod, setPaymentMethod] = useState(''); // Estado para el método de pago seleccionado
     const [creditCardDetails, setCreditCardDetails] = useState({
         cardNumber: '',
         cardHolderName: '',
         expirationDate: '',
         cvv: '',
         cardType: ''
-    });
-    const [processing, setProcessing] = useState(false);
-    const [purchaseResult, setPurchaseResult] = useState(null);
+    }); // Estado para los detalles de la tarjeta de crédito
+    const [processing, setProcessing] = useState(false); // Estado para indicar si se está procesando el pago
+    const [purchaseResult, setPurchaseResult] = useState(null); // Estado para el resultado de la compra
 
+    // Descomentar si necesitas cargar las membresías desde una API
     // useEffect(() => {
     //     actions.loadMemberships();
     // }, []);
 
+    // Maneja el clic del botón para comprar una membresía
     const handleBuyClick = () => {
+        // Verifica si el usuario ya tiene una membresía activa
         if (store.uploadedUserData.active_membership_is_active !== "No Activa") {
-            alert('You already have an active membership!');
+            alert('You already have an active membership!'); // Alerta al usuario si ya tiene una membresía activa
         } else {
-            setShowSelectionModal(true);
+            setShowSelectionModal(true); // Muestra el modal de selección de membresía
         }
     };
 
+    // Maneja la selección de una membresía
     const handleMembershipSelect = (membership) => {
-        setSelectedMembership(membership);
-        setShowSelectionModal(false);
+        setSelectedMembership(membership); // Establece la membresía seleccionada
+        setShowSelectionModal(false); // Oculta el modal de selección de membresía
     };
 
+    // Maneja los cambios en los campos de entrada de la tarjeta de crédito
     const handleInputChange = (event) => {
         setCreditCardDetails({
             ...creditCardDetails,
-            [event.target.name]: event.target.value
+            [event.target.name]: event.target.value // Actualiza los detalles de la tarjeta de crédito
         });
     };
 
+    // Maneja la presentación del formulario de pago
     const handleFormSubmit = async (event) => {
-        event.preventDefault();
-        // Asegúrate de que se seleccionó un método de pago
+        event.preventDefault(); // Previene la acción por defecto del formulario
+
+        // Verifica si se ha seleccionado un método de pago
         if (!paymentMethod) {
             alert('Please select a payment method.');
             return;
         }
-        if(paymentMethod !== 'cash' &&  (!paymentMethod || !creditCardDetails.cardNumber || !creditCardDetails.expirationDate || !creditCardDetails.cvv || !creditCardDetails.cardType)) {
+
+        // Verifica si se han completado todos los detalles de la tarjeta de crédito si el método de pago no es en efectivo
+        if (paymentMethod !== 'cash' && (!creditCardDetails.cardNumber || !creditCardDetails.expirationDate || !creditCardDetails.cvv || !creditCardDetails.cardType)) {
             alert('Please complete all payment details.');
             return;
         }
-        setProcessing(true);
+
+        setProcessing(true); // Indica que se está procesando el pago
+
+        // Crea un objeto con los datos del pago
         const paymentData = {
             amount: selectedMembership.price,
             payment_method: paymentMethod,
             ...(paymentMethod !== 'cash' && {
-            card_number: creditCardDetails.cardNumber,
-            cardholder_name: creditCardDetails.cardHolderName,
-            expiration_date: creditCardDetails.expirationDate,
-            cvv: creditCardDetails.cvv,
-            card_type: creditCardDetails.cardType})
+                card_number: creditCardDetails.cardNumber,
+                cardholder_name: creditCardDetails.cardHolderName,
+                expiration_date: creditCardDetails.expirationDate,
+                cvv: creditCardDetails.cvv,
+                card_type: creditCardDetails.cardType
+            })
         };
-        
-        console.log(paymentData)
+
+        console.log(paymentData); // Muestra los datos del pago en la consola
+
+        // Llama a la acción para realizar la compra de la membresía
         const result = await actions.purchaseMembership({
             membership_id: selectedMembership.id,
             payment_data: paymentData
         });
-        setPurchaseResult(result);
-        setProcessing(false);
+
+        setPurchaseResult(result); // Establece el resultado de la compra
+        setProcessing(false); // Indica que se ha terminado de procesar el pago
     };
 
+    // Renderiza el formulario de la tarjeta de crédito
     const renderCreditCardForm = () => (
         <>
             <Form.Group>
@@ -103,6 +122,7 @@ const MembershipPurchase = () => {
         </>
     );
 
+    // Renderiza el componente
     return (
         <>
             <Button className={styles.buttonBuy} onClick={handleBuyClick}>Buy Membership</Button>
@@ -136,10 +156,12 @@ const MembershipPurchase = () => {
                             <Form.Group>
                                 <Form.Label>Payment Method</Form.Label>
                                 <DropdownButton id="dropdown-payment-method" title={paymentMethod || 'Select Method'} className={styles.paymentMethodDropdown}>
-                                    <Dropdown.Item onClick={() => setPaymentMethod('credit_card')}><i class="fa-solid fa-credit-card"></i> Credit Card</Dropdown.Item>
-                                    <Dropdown.Item onClick={() => setPaymentMethod('debit_card')}><i class="fa-solid fa-credit-card"></i> Debit Card</Dropdown.Item>
-                                    <Dropdown.Item onClick={() => setPaymentMethod('paypal')}><i class="fa-brands fa-paypal"></i> PayPal</Dropdown.Item>
-                                    <Dropdown.Item onClick={() => setPaymentMethod('cash')}><i class="fa-regular fa-money-bill-1"></i> Cash</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => setPaymentMethod('credit_card')}><i className="fa-solid fa-credit-card"></i> Credit Card</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => setPaymentMethod('debit_card')}><i className="fa-solid fa-credit-card"></i> Debit Card</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => setPaymentMethod('paypal')}><i className="fa-brands fa-paypal"></i> PayPal</Dropdown.Item>
+                                    {['admin', 'master'].includes(store.dataRole) && (
+                                        <Dropdown.Item onClick={() => setPaymentMethod('cash')}><i className="fa-regular fa-money-bill-1"></i> Cash</Dropdown.Item>
+                                    )}
                                 </DropdownButton>
                             </Form.Group>
                             {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && renderCreditCardForm()}

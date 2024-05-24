@@ -38,6 +38,8 @@ import Users from "./pages/Users.jsx"; // revisar
 import Oneuser from "./pages/Oneuser.jsx"; // revisar
 // import Homeadmin from "./pages/Homeadmin.jsx"; // revisar
 import Menuadmin from "./component/Menuadmin.jsx"; // revisar
+import UploadForm from "./component/UploadForm.jsx";
+import ImageGallery from "./component/ImageGallery.jsx";
 
 //create your first component
 const Layout = () => {
@@ -77,9 +79,8 @@ const Layout = () => {
                         <Route element={<Oneuser />} path="/Oneuser" />
                         {/* <Route element={<Homeadmin />} path="/Homeadmin" /> */}
                         <Route element={<Menuadmin />} path="/Menuadmin" />
-                        <Route element={<BookingView />} path="/AdminBookingView" />
-                        <Route element={<AdminCoachView />} path="/AdminCoachActions" />
-                        <Route element={<ClassEdit />} path="/MasterClassEdit/:id" />
+                        <Route element={<UploadForm />} path="/UploadForm" />
+                        <Route element={<ImageGallery />} path="/ImageGallery" />
                         <Route element={<h1>Not found!</h1>} />
                     </Routes>
                     <Footer />

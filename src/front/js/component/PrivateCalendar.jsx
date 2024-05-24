@@ -99,7 +99,7 @@ const PrivateCalendar = () => {
                 isOpen={modalIsOpen}
                 onRequestClose={closeModal}
                 contentLabel="Class Details"
-                className={styles.modal}
+                className={`${styles.modal} ${styles.customModal}`}
                 overlayClassName={styles.overlay}
                 shouldCloseOnOverlayClick={true}
                 shouldReturnFocusAfterClose={true}

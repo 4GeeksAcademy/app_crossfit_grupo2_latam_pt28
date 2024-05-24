@@ -37,14 +37,14 @@ const NavigationBar = () => {
     return (
         <>
             <Navbar bg="light" expand="lg" className={styles.navbar}>
-                <Navbar.Brand href="#home">No Name</Navbar.Brand>
+                <Navbar.Brand className={styles.logonavbar}>MOMENTUM360</Navbar.Brand>
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
                 <Navbar.Collapse id="basic-navbar-nav">
                     <Nav className="me-auto">
-                        <Nav.Link href="/">Home</Nav.Link>
-                        <Nav.Link href="/plans">Plans</Nav.Link>
-                        <Nav.Link href="/Benefits">About</Nav.Link>
-                        <Nav.Link href="/BookingView">Calendar</Nav.Link>
+                        <Nav.Link href="/" className={styles.logonavbar}>Home</Nav.Link>
+                        <Nav.Link href="/plans" className={styles.logonavbar}>Plans</Nav.Link>
+                        <Nav.Link href="/Benefits" className={styles.logonavbar}>About</Nav.Link>
+                        <Nav.Link href="/BookingView" className={styles.logonavbar}>Calendar</Nav.Link>
                     </Nav>
                     {store.isAuthenticated && (
                         <>

@@ -29,8 +29,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			creationTrainingClasses: [],
 			bookingData: [],
 			memberships: [],
-			membershipsLoading: false,
-			editTrainingClass: []
+            membershipsLoading: false
 
 
 
@@ -614,9 +613,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 					setStore({ ...store, user: data }); // Actualiza el estado con el usuario obtenido
 
 				} catch (error) {
-					console.error(error); // Maneja cualquier error que ocurra durante el proceso
+				  console.error(error); // Maneja cualquier error que ocurra durante el proceso
 				}
-			},
+			  },
 
 			
 

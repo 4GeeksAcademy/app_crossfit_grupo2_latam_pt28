@@ -20,6 +20,8 @@ import MembershipPurchase from "../component/MembershipPurchase.jsx";
 import Oneuser from "./Oneuser.jsx";
 import Users from "./Users.jsx";
 import Homeadmin from "./Homeadmin.jsx";
+import UploadForm from "../component/UploadForm.jsx";
+import ImageGallery from "../component/ImageGallery.jsx";
 
 const ModulePage = () => {
     const [show, setShow] = useState(false);
@@ -49,6 +51,8 @@ const ModulePage = () => {
         { component: <Oneuser />, name: "Oneuser " },
         { component: <Users />, name: "Users " },
         { component: <Homeadmin />, name: "Homeadmin " },
+        { component: <UploadForm />, name: "UploadForm " },
+        { component: <ImageGallery />, name: "ImageGallery " },
 
 
 

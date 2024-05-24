@@ -9,14 +9,9 @@ import styles from './Calendar.module.css'; // Asegúrate de que la ruta al CSS 
 const localizer = momentLocalizer(moment);
 
 const MyCalendar = () => {
-    
     const { store, actions } = useContext(Context);
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
-
-    // useEffect(() => {
-    //     actions.loadTrainingClasses(); // Carga las clases al montar el componente
-    // }, []);
 
     const events = store.trainingClasses.map(event => ({
         ...event,
@@ -48,26 +43,27 @@ const MyCalendar = () => {
                     background: '#bebebe',
                     borderRadius: '5px',
                     color: 'gray'
-                  }}
+                }}
                 onSelectEvent={handleEventClick}
             />
             {selectedEvent && (
                 <Modal
-                isOpen={modalIsOpen}
-                onRequestClose={closeModal}
-                contentLabel="Class Details"
-                className={styles.modal}
-                overlayClassName={styles.overlay}
-                shouldCloseOnOverlayClick={true}
-                shouldReturnFocusAfterClose={true}
-            >
+                    isOpen={modalIsOpen}
+                    onRequestClose={closeModal}
+                    contentLabel="Class Details"
+                    className={`${styles.modal} ${styles.customModal}`}
+                    overlayClassName={styles.overlay}
+                    shouldCloseOnOverlayClick={true}
+                    shouldReturnFocusAfterClose={true}
+        
+                >
                     <h2>{selectedEvent.title}</h2>
                     <p>Description: {selectedEvent.description}</p>
                     <p>Instructor: {selectedEvent.instructor}</p>
                     <p>Duration: {selectedEvent.start_time} minutes</p>
                     <p>Duration: {selectedEvent.duration_minutes} minutes</p>
                     <p>Available slots: {selectedEvent.available_slots}</p>
-                    <button className={styles.loginButton} onClick={closeModal}>close</button>
+                    <button className={styles.loginButton} onClick={closeModal}>Close</button>
                 </Modal>
             )}
         </div>

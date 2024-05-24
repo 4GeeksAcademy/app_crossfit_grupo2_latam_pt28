@@ -2,9 +2,9 @@
 Este módulo se encarga de iniciar el servidor API, cargar la base de datos y agregar los puntos finales.
 """
 
-
+import os
 from flask import Flask, request, jsonify, url_for, Blueprint, redirect, url_for, render_template  # Importación de Flask y funciones relacionadas
-from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory  # Importación de los modelos de la base de datos
+from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages  # Importación de los modelos de la base de datos
 from api.utils import generate_sitemap, APIException  # Importación de funciones de utilidad y excepciones personalizadas
 from flask_cors import CORS  # Importación de CORS para permitir solicitudes desde otros dominios
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity  # Importación de JWT para autenticación y autorización basada en tokens
@@ -12,13 +12,19 @@ from flask_bcrypt import generate_password_hash, check_password_hash  # Importac
 from datetime import timedelta  # Importación de timedelta para manejar intervalos de tiempo
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
+from flask import send_file
+from io import BytesIO
+import base64
 
-from .booking_service import create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email, cancel_class_and_update_bookings
+
+from .booking_service import create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email, cancel_class_and_update_bookings, allowed_file
 
 
 #------------------verificar con david --------------------------------
-
+#Configura la aplicación para permitir cargas de archivos
 from werkzeug.utils import secure_filename # importacion de secure_filename para manejar imagen
+
+
 
 
 
@@ -1238,6 +1244,94 @@ def purchase_membership_admin(user_email):  # Función que maneja la solicitud P
 
 
 
+#-------------------------------------------------ENPOINT PARA LA CARGA DE ARCHIVOS-----------------------------------------------------------
+
+# Define una ruta de API para subir imágenes utilizando el método POST
+@api.route('/upload_img', methods=['POST'])
+@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan realizar compras.
+def upload_img():
+    # Verifica si el archivo está presente en la solicitud
+    if 'file' not in request.files:
+        # Si no hay archivo, retorna un mensaje de error en formato JSON con un código de estado 400
+        return jsonify({'error': 'No file part'}), 400
+    
+    # Obtiene el archivo de la solicitud
+    file = request.files['file']
+    
+    # Verifica si el nombre del archivo está vacío, lo que indica que no se seleccionó ningún archivo
+    if file.filename == '':
+        # Si no se seleccionó archivo, retorna un mensaje de error en formato JSON con un código de estado 400
+        return jsonify({'error': 'No selected file'}), 400
+    
+    # Verifica si el archivo está presente y tiene un formato permitido
+    if file and allowed_file(file.filename):
+        # Lee los datos del archivo
+        file_data = file.read()
+        
+        # Crea un nuevo registro en la base de datos con los datos del archivo
+        new_img = MovementImages(
+            name=request.form['name'],  # Obtiene el nombre del formulario
+            description=request.form['description'],  # Obtiene la descripción del formulario
+            img_data=file_data  # Almacena los datos del archivo
+        )
+        
+        # Añade el nuevo registro a la sesión de la base de datos
+        db.session.add(new_img)
+        
+        # Guarda los cambios en la base de datos
+        db.session.commit()
+        
+        # Retorna un mensaje de éxito en formato JSON con un código de estado 200
+        return jsonify({'message': 'File uploaded successfully'}), 200
+    
+    # Si el archivo no tiene un formato permitido, retorna un mensaje de error en formato JSON con un código de estado 400
+    return jsonify({'error': 'Invalid file format'}), 400
+
+# Define una ruta de API para obtener imágenes con paginación utilizando el método GET
+@api.route('/images', methods=['GET'])
+@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan realizar compras.
+def get_images():
+    # Obtiene el número de página de los parámetros de la solicitud, por defecto es 1
+    page = request.args.get('page', 1, type=int)
+    # Obtiene el número de elementos por página de los parámetros de la solicitud, por defecto es 10
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    try:
+        # Consulta las imágenes en la base de datos con paginación
+        images = MovementImages.query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Prepara los resultados en un formato JSON adecuado
+        results = [{
+            'name': img.name,  # Nombre de la imagen
+            'description': img.description,  # Descripción de la imagen
+            'img_url': f"data:image/gif;base64,{base64.b64encode(img.img_data).decode('utf-8')}"  # Codifica los datos de la imagen en base64
+        } for img in images.items]
+        
+        # Retorna los resultados en formato JSON con un código de estado 200
+        return jsonify(results), 200
+    except Exception as e:
+        # Si ocurre una excepción, retorna un mensaje de error en formato JSON con un código de estado 500
+        return jsonify({'error': str(e)}), 500
+
+# Define una ruta de API para obtener todas las imágenes sin paginación utilizando el método GET
+@api.route('/all_images', methods=['GET'])
+@jwt_required()  # Decorador para requerir autenticación con JWT, asegurando que solo usuarios autenticados puedan realizar compras.
+def get_all_images():
+    # Consulta todas las imágenes en la base de datos
+    images = MovementImages.query.all()
+    
+    # Prepara los resultados en un formato JSON adecuado
+    results = [{
+        'name': img.name,  # Nombre de la imagen
+        'description': img.description,  # Descripción de la imagen
+        'img_url': f"data:image/gif;base64,{base64.b64encode(img.img_data).decode('utf-8')}"  # Codifica los datos de la imagen en base64
+    } for img in images]
+    
+    # Retorna los resultados en formato JSON con un código de estado 200
+    return jsonify(results), 200
+
+
+#-------------------------------------------------ENPOINT PARA LA CARGA DE ARCHIVOS-----------------------------------------------------------
 
 
 

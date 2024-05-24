@@ -4,6 +4,10 @@ from datetime import datetime, timedelta  # Importación del módulo datetime pa
 from flask import current_app as app
 from flask_mail import Message, Mail
 from itsdangerous import URLSafeTimedSerializer as Serializer
+from werkzeug.utils import secure_filename # importacion de secure_filename para manejar imagen
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 
 mail = Mail()
 
@@ -233,3 +237,10 @@ def confirm_token_email(token, expiration=3600):
     
     # Retorna el email decodificado si el token es válido y no ha expirado.
     return email
+
+
+
+#--------------------------------------------------------FUNCION PARA LA VERIFICACION DEL TIPO DE ARCHIVO A CARGAR------------------------------
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
