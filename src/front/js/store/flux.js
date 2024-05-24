@@ -29,7 +29,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 			creationTrainingClasses: [],
 			bookingData: [],
 			memberships: [],
-			membershipsLoading: false
+			membershipsLoading: false,
+			editTrainingClass: []
 
 
 
@@ -615,6 +616,96 @@ const getState = ({ getStore, getActions, setStore }) => {
 				} catch (error) {
 					console.error(error); // Maneja cualquier error que ocurra durante el proceso
 				}
+			},
+
+			
+
+			//funcion asincrona para editar clases desde usuario master
+			editClasses: async (dataClasses) => {
+				console.log(dataClasses)
+				// Obtenemos el token del almacenamiento local
+				let myToken = localStorage.getItem("token");
+				// Construimos la URL para la solicitud
+				let url = `${process.env.BACKEND_URL}api/training_classes/<int:class_id">)`;
+
+				try {
+					let response = await fetch(url, {
+						method: "PUT", // Método de la solicitud
+						headers: {
+							"Authorization": `Bearer ${myToken}`,// Se incluye el token de autorización en los encabezados concatenamos con el nombre del tipo de token "BearerToken"
+							"Content-Type": "application/json", // Especifica que el cuerpo de la solicitud es JSON
+						},
+						body: JSON.stringify(dataClasses)
+
+					});
+					let data = await response.json(); // Se espera la respuesta del servidor en formato JSON
+					console.log(data)
+
+					// Verificamos si la respuesta de la solicitud es exitosa (status code 200-299)
+					if (response.ok) {
+						// Asumiendo que quieres actualizar el store aquí
+						let store = getStore();
+						setStore({ ...store, editTrainingClasses: data });
+						return { success: true, data: data };
+					} else {
+						// Incluir la respuesta en la acción puede ayudar a manejar el estado más localmente
+						return { success: false, error: data.error || "Unknown error occurred." };
+					}
+
+					// console.log('data after setTimeout',data)
+
+				} catch (error) {
+					// console.error(error);
+					throw new Error(`Error login: ${error.message}`); // Se maneja cualquier error que ocurra durante el proceso de inicio de sesión
+				}
+			},
+
+			// Función para crear un lote de clases completamente independiente
+			editBatchClasses: async (formData) => {
+				let startDate = new Date(formData.dateTime_class);
+				let endDate = new Date(formData.endDate);
+				let myToken = localStorage.getItem("token");
+				let url = `${process.env.BACKEND_URL}api/training_classes`;
+				let errors = [];
+				let successfulCreations = [];
+
+				while (startDate <= endDate) {
+					let classData = {
+						...formData,
+						dateTime_class: startDate.toISOString().split('T')[0] + ' ' + formData.start_time
+					};
+
+					try {
+						let response = await fetch(url, {
+							method: "PUT",
+							headers: {
+								"Authorization": `Bearer ${myToken}`,
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify(classData)
+						});
+						let data = await response.json();
+						if (response.ok) {
+							successfulCreations.push(data);
+						} else {
+							errors.push({ error: data.error || "Unknown error occurred.", date: startDate.toISOString() });
+						}
+					} catch (error) {
+						errors.push({ error: error.message, date: startDate.toISOString() });
+					}
+
+					startDate.setDate(startDate.getDate() + 1); // Incrementa el día
+				}
+
+				// Actualiza el store al final del proceso
+				let store = getStore(); // Obtiene el estado actual del store
+				setStore({ ...store, creationTrainingClasses: successfulCreations }); // Actualiza el store con las nuevas clases creadas
+				// Decide qué hacer con los errores y éxitos después de procesar todas las fechas
+				if (errors.length > 0) {
+					return { success: false, messageError: 'Some errors occurred.', errors: errors };
+				}
+				return { success: true, message: 'All classes were created successfully' };
+
 			},
 
 		},

@@ -79,7 +79,7 @@ const Layout = () => {
                         <Route element={<Menuadmin />} path="/Menuadmin" />
                         <Route element={<BookingView />} path="/AdminBookingView" />
                         <Route element={<AdminCoachView />} path="/AdminCoachActions" />
-                        <Route element={<ClassEdit />} path="/MasterClassEdit" />
+                        <Route element={<ClassEdit />} path="/MasterClassEdit/:id" />
                         <Route element={<h1>Not found!</h1>} />
                     </Routes>
                     <Footer />

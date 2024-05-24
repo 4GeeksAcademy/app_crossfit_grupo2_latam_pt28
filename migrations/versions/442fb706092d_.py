@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 8fa2e74d115e
+Revision ID: 442fb706092d
 Revises: 
-Create Date: 2024-05-17 23:44:46.128702
+Create Date: 2024-05-23 18:40:26.442180
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8fa2e74d115e'
+revision = '442fb706092d'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -68,9 +68,16 @@ def upgrade():
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('membership_id', sa.Integer(), nullable=False),
     sa.Column('payment_date', sa.DateTime(), nullable=True),
+    sa.Column('confirmation_date', sa.DateTime(), nullable=True),
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('payment_method', sa.String(length=50), nullable=False),
     sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('transaction_reference', sa.String(length=255), nullable=True),
+    sa.Column('currency', sa.String(length=3), nullable=True),
+    sa.Column('description', sa.String(length=255), nullable=True),
+    sa.Column('card_number_last4', sa.String(length=4), nullable=True),
+    sa.Column('card_type', sa.String(length=255), nullable=True),
+    sa.Column('cardholder_name', sa.String(length=255), nullable=True),
     sa.ForeignKeyConstraint(['membership_id'], ['membership.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -88,6 +95,7 @@ def upgrade():
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('dateTime_class', sa.DateTime(), nullable=True),
+    sa.Column('Class_is_active', sa.Boolean(), nullable=True),
     sa.Column('start_time', sa.Time(), nullable=False),
     sa.Column('duration_minutes', sa.Integer(), nullable=False),
     sa.Column('available_slots', sa.Integer(), nullable=False),
@@ -120,8 +128,13 @@ def upgrade():
     op.create_table('payment_detail',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('payment_id', sa.Integer(), nullable=False),
+    sa.Column('product_id', sa.Integer(), nullable=False),
+    sa.Column('product_description', sa.String(length=255), nullable=True),
     sa.Column('quantity', sa.Integer(), nullable=False),
+    sa.Column('unit_price', sa.Float(), nullable=False),
     sa.Column('subtotal', sa.Float(), nullable=False),
+    sa.Column('tax_amount', sa.Float(), nullable=False),
+    sa.Column('discount_amount', sa.Float(), nullable=False),
     sa.ForeignKeyConstraint(['payment_id'], ['payment.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
