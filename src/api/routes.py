@@ -1446,14 +1446,14 @@ def get_user_pr_records_prueba():
 
 # -------------------- ENDPOINT PRODUCTS --------------------------------------------------
 
-# @api.route('/products', methods=['GET'])
-# @jwt_required() 
-# def get_all_products():
-#   """
-#   GET route to retrieve all products from the database.
-#   """
-#   products = Products.query.all()  # Get all products from the table
-#   return jsonify([product.serialize() for product in products])  # Serialize and return as JSON
+@api.route('/products', methods=['GET'])
+@jwt_required() 
+def get_all_products():
+  """
+  GET route to retrieve all products from the database.
+  """
+  products = Products.query.all()  # Get all products from the table
+  return jsonify([product.serialize() for product in products])  # Serialize and return as JSON
 
-# if __name__ == '__main__':
-#   api.run(debug=True)
+if __name__ == '__main__':
+  api.run(debug=True)
