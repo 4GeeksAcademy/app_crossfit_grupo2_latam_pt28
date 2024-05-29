@@ -1443,3 +1443,17 @@ def get_user_pr_records_prueba():
     except Exception as e:
         current_app.logger.error(f"Error fetching PR records: {e}")  # Loggea el error para depuración
         return jsonify({'error': str(e)}), 500  # Retorna un mensaje de error con el estado 500 (Error Interno del Servidor)
+
+# -------------------- ENDPOINT PRODUCTS --------------------------------------------------
+
+# @api.route('/products', methods=['GET'])
+# @jwt_required() 
+# def get_all_products():
+#   """
+#   GET route to retrieve all products from the database.
+#   """
+#   products = Products.query.all()  # Get all products from the table
+#   return jsonify([product.serialize() for product in products])  # Serialize and return as JSON
+
+# if __name__ == '__main__':
+#   api.run(debug=True)

@@ -419,3 +419,24 @@ class PRRecord(db.Model):
             "unit": self.unit,
             "date": self.date.isoformat()  # Mantén la fecha completa
         }
+
+
+#----------------------------------------------- TABLA PARA PRODUCTOS --------------------------------------------
+# Tabla de Productos
+class Products(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    img_data = db.Column(LargeBinary, nullable=False)
+
+    def __repr__(self):
+        return '<Product %r>' % self.id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "unit_price": self.price, 
+        }
