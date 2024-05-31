@@ -424,3 +424,39 @@ class PRRecord(db.Model):
             "unit": self.unit,
             "date": self.date.isoformat()  # Mantén la fecha completa
         }
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    send_time = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sender = db.relationship("User", foreign_keys=[sender_id], backref=db.backref("sent_messages", lazy='dynamic'))
+    recipient = db.relationship("User", foreign_keys=[recipient_id], backref=db.backref("received_messages", lazy='dynamic'))
+
+    def __repr__(self):
+        return '<Message %r>' % self.id
+
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "sender_id": self.sender_id,
+            "subject": self.subject,
+            "body": self.body,
+            "send_time": self.send_time.isoformat(),
+            "is_broadcast": self.is_broadcast
+        }
+
+
+class MessageRecipient(db.Model):
+    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+
+    message = db.relationship("Message", backref=db.backref("message_recipients", lazy='dynamic'))
+    recipient = db.relationship("User", foreign_keys=[recipient_id], backref=db.backref("recipient_entries", lazy='dynamic'))
+
+    def __repr__(self):
+        return '<MessageRecipient %r>' % (self.message_id, self.recipient_id)

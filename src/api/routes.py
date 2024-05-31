@@ -1775,4 +1775,47 @@ def get_class_reservation_frequency():
 #     except Exception as e:
 #         return jsonify({'error': str(e)}), 500
 
+#-------------------------------------------------ENPOINT PARA EL ENVIO DE MENSAJES------------------------------------------------------------------------------------
 
+
+@api.route('/messages/send', methods=['POST'])
+@jwt_required()
+def send_message():
+    user_id = get_jwt_identity()  # Asumiendo que usas JWT y get_jwt_identity() devuelve el ID del usuario
+    data = request.get_json()
+    if 'recipient_id' not in data or 'content' not in data:
+        return jsonify({'error': 'Recipient and content are required'}), 400
+
+    recipient_id = data.get('recipient_id')
+    content = data.get('content')
+
+    try:
+        new_message = Message(
+            sender_id=user_id,
+            recipient_id=recipient_id,
+            body=content
+        )
+        db.session.add(new_message)
+        db.session.commit()
+        return jsonify({'message': 'Message sent successfully'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+
+@api.route('/messages', methods=['GET'])
+@jwt_required()
+def list_messages():
+    try:
+        user_id = get_jwt_identity()
+        # Obtener mensajes recibidos
+        received_messages = Message.query.filter_by(recipient_id=user_id).all()
+        # Obtener mensajes enviados
+        sent_messages = Message.query.filter_by(sender_id=user_id).all()
+
+        received = [{'id': msg.id, 'from': msg.sender_id, 'content': msg.content} for msg in received_messages]
+        sent = [{'id': msg.id, 'to': msg.recipient_id, 'content': msg.content} for msg in sent_messages]
+
+        return jsonify({'received': received, 'sent': sent}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

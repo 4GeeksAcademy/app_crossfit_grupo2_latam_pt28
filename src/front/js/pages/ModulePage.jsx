@@ -33,7 +33,8 @@ import ClassFrequencyChart from "../component/ClassFrequencyChart.jsx";
 
 import ClassesView from "../component/ClassesView.jsx";
 
-
+import SendMessage from "../component/SendMessage.jsx";
+import ReceiveMessages from "../component/ReceiveMessages.jsx";
 
 const ModulePage = () => {
     const { store, actions } = useContext(Context);
@@ -79,6 +80,10 @@ const ModulePage = () => {
 
         // { component: <UserBooking />, name: "User Booking" },
         { component: <PRRecord />, name: "PRRecord " },
+
+        { component: <SendMessage />, name: "SendMessage " },
+        { component: <ReceiveMessages />, name: "ReceiveMessages " },
+
 
 
 

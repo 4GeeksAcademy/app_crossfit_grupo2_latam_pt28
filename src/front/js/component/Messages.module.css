@@ -1,0 +1,81 @@
+/* messages.css */
+:root {
+    --color-light: #E6E6E9;
+    --color-grey: #A8A7A8;
+    --color-green: #5D7266;
+    --color-brown: #937863;
+    --color-dark: #3C403F;
+  }
+  
+  .container {
+    background-color: var(--color-light);
+    color: var(--color-dark);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .badge {
+    background-color: var(--color-green);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+  }
+  
+  .messagelist {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .message-list li {
+    background-color: var(--color-grey);
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+  }
+  
+  .button {
+    background-color: var(--color-brown);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .button:hover {
+    background-color: var(--color-green);
+  }
+  
+  .modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--color-light);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 90%;
+    max-width: 500px;
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+  
