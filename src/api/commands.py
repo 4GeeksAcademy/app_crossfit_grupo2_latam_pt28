@@ -9,6 +9,20 @@ import random  # Librería para generar números aleatorios
 fake = Faker()  # Crea una instancia de Faker para generar datos aleatorios como nombres, correos, etc.
 
 """
+COMANDO PARA REINICIR MIGRACIONES:
+
+rm -R -f ./migrations &&
+pipenv run init &&
+dropdb -h localhost -U postgres gym_db || true &&
+createdb -h localhost -U postgres gym_db || true &&
+psql -h localhost postgres -U gym_db -c 'CREATE EXTENSION unaccent;' || true &&
+pipenv run migrate &&
+pipenv run upgrade
+
+"""
+
+
+"""
 Comandos de Flask para creacion de usuarios
 
 flask create-permissions
