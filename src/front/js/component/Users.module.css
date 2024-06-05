@@ -1,13 +1,15 @@
 .container {
   padding: 20px;
-  background-color: #E6E6E9; /* Fondo claro */
+  background-color: #E6E6E9;
+  /* Fondo claro */
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   font-size: small;
 }
 
 .title {
-  color: #3C403F; /* Color oscuro */
+  color: #3C403F;
+  /* Color oscuro */
   margin-bottom: 20px;
 }
 
@@ -26,16 +28,20 @@
 }
 
 .table th {
-  background-color: #A8A7A8; /* Fondo de encabezados */
-  color: #3C403F; /* Texto de encabezados */
+  background-color: #A8A7A8;
+  /* Fondo de encabezados */
+  color: #3C403F;
+  /* Texto de encabezados */
 }
 
 .table tr:nth-child(even) {
-  background-color: #E6E6E9; /* Fondo de filas pares */
+  background-color: #E6E6E9;
+  /* Fondo de filas pares */
 }
 
 .tableRow:hover {
-  background-color: #937863; /* Color marrón */
+  background-color: #937863;
+  /* Color marrón */
 }
 
 .modalContent {
@@ -43,7 +49,8 @@
 }
 
 .card {
-  background-color: #E6E6E9; /* Fondo claro */
+  background-color: #E6E6E9;
+  /* Fondo claro */
   border: none;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -71,8 +78,10 @@
 }
 
 .button:hover {
-  background-color: #5D7266; /* Verde */
-  color: #E6E6E9; /* Fondo claro */
+  background-color: #5D7266;
+  /* Verde */
+  color: #E6E6E9;
+  /* Fondo claro */
 }
 
 .userImagen {
@@ -91,11 +100,21 @@
 }
 
 .buttonActivation {
-  background-color: #5D7266; /* Verde */
+  background-color: #5D7266;
+  /* Verde */
   border: none;
 
 }
 
 .titleComponent {
   color: var(--color-green);
+}
+
+.buttonExcel {
+  display: block;
+  /* Centra el botón horizontalmente y añade margen inferior */
+  font-size: 5px;
+  /* Ajusta el tamaño de la fuente del botón */
+  padding: 5px 10px;
+  /* Añade padding para hacer el botón más pequeño */
 }

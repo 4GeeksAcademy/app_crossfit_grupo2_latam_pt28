@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Context } from "../store/appContext";
 import { Form, Row, Col, Button, Modal, InputGroup, FormControl } from "react-bootstrap";
+import * as XLSX from 'xlsx';
 import styles from "./ClassesView.module.css";
 import EditClasses from "./EditClasses.jsx";
 import moment from 'moment';
@@ -40,11 +41,27 @@ const ClassesView = () => {
         return classes
             .filter(item => item.Class_is_active === isActive)
             .filter(item => item.name.toLowerCase().includes(filter.toLowerCase()) ||
-                            item.instructor.toLowerCase().includes(filter.toLowerCase()) ||
-                            item.description.toLowerCase().includes(filter.toLowerCase()) ||
+                item.instructor.toLowerCase().includes(filter.toLowerCase()) ||
+                item.description.toLowerCase().includes(filter.toLowerCase()) ||
 
-                            moment(item.dateTime_class).format('LL').toLowerCase().includes(filter.toLowerCase()));
+                moment(item.dateTime_class).format('LL').toLowerCase().includes(filter.toLowerCase()));
     }
+
+    const downloadExcel = () => {
+        const dataToExport = store.classesData.map(item => ({
+            Name: item.name,
+            Description: item.description,
+            Instructor: item.instructor,
+            Date: moment(item.dateTime_class).format('LL'),
+            'Start Time': item.start_time,
+            'Duration (minutes)': item.duration_minutes,
+            'Available Slots': item.available_slots
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Classes');
+        XLSX.writeFile(wb, 'Classes.xlsx');
+    };
 
     return (
         <div className={`container-fluid ${styles.classesViewContainer}`}>
@@ -56,6 +73,9 @@ const ClassesView = () => {
                     onChange={(e) => setFilter(e.target.value)}
                 />
             </InputGroup>
+            <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+                <i className="fa-solid fa-file-excel"></i> Download Excel
+            </Button>
             <div className="table-responsive">
                 <table className={`table ${styles.table}`}>
                     <thead>
@@ -76,7 +96,7 @@ const ClassesView = () => {
                                 <td>{item.name}</td>
                                 <td>{item.description}</td>
                                 <td>{item.instructor}</td>
-                                <td className="text-center"><FormattedDate dateTime={item.dateTime_class}/></td>
+                                <td className="text-center"><FormattedDate dateTime={item.dateTime_class} /></td>
                                 <td className="text-center">{item.start_time}</td>
                                 <td className="text-center">{item.duration_minutes}</td>
                                 <td className="text-center">{item.available_slots}</td>

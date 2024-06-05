@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Context } from "../store/appContext";
 import { Modal, Button, Table, FormControl, InputGroup } from "react-bootstrap";
+import * as XLSX from 'xlsx';
 import styles from "./Users.module.css";
 import moment from "moment";
 
@@ -16,7 +17,7 @@ const Users = () => {
     return <span>{moment(dateTime).format('LL')}</span>;
   };
 
-    useEffect(() => {
+  useEffect(() => {
     actions.getUsers();
   }, []);
 
@@ -29,6 +30,13 @@ const Users = () => {
       ));
     }
   }, [search, store.users]);
+
+  const downloadExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredUsers);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Users');
+    XLSX.writeFile(wb, 'Users.xlsx');
+  };
 
   const handleShowModal = (user) => {
     setSelectedUser(user);
@@ -72,6 +80,9 @@ const Users = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
       </InputGroup>
+      <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+        <i className="fa-solid fa-file-excel"></i> Download Excel
+      </Button>
       <div className="table-responsive">
         <Table striped bordered hover responsive className={styles.table}>
           <thead>
@@ -166,21 +177,21 @@ const Users = () => {
       </Modal>
 
       <Modal show={showConfirmModal} onHide={handleCloseConfirmModal} centered>
-      <div className={styles.modalactivation}>
-        <Modal.Header >
-          <Modal.Title>Confirm Action</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to {selectedUser && selectedUser.is_active ? 'deactivate' : 'activate'} this account?
-        </Modal.Body>
-        <Modal.Footer>
-        <Button variant="danger" onClick={toggleUserActivation}>
-            Yes, {selectedUser && selectedUser.is_active ? 'Deactivate' : 'Activate'}
-          </Button>
-          <Button variant="secondary" onClick={handleCloseConfirmModal}>
-            No
-          </Button>
-        </Modal.Footer>
+        <div className={styles.modalactivation}>
+          <Modal.Header >
+            <Modal.Title>Confirm Action</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to {selectedUser && selectedUser.is_active ? 'deactivate' : 'activate'} this account?
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="danger" onClick={toggleUserActivation}>
+              Yes, {selectedUser && selectedUser.is_active ? 'Deactivate' : 'Activate'}
+            </Button>
+            <Button variant="secondary" onClick={handleCloseConfirmModal}>
+              No
+            </Button>
+          </Modal.Footer>
         </div>
       </Modal>
     </div>

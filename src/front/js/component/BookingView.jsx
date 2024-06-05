@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Context } from "../store/appContext";
-import { Table, Form, InputGroup, FormControl } from 'react-bootstrap';
+import { Table, Form, InputGroup, FormControl, Button } from 'react-bootstrap';
+import * as XLSX from 'xlsx';
 import styles from './BookingView.module.css';
 import moment from "moment";
 
@@ -16,7 +17,7 @@ const BookingView = () => {
 
     const FormattedDate = ({ dateTime }) => {
         return <span>{moment(dateTime).format('LL')}</span>;
-        };
+    };
 
 
     useEffect(() => {
@@ -30,6 +31,13 @@ const BookingView = () => {
         }
     }, [search, store.bookingData]);
 
+    const downloadExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(filteredBookings);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+        XLSX.writeFile(wb, 'Bookings.xlsx');
+    };
+
     return (
         <div className={styles.tableContainer}>
             <h1 className={styles.titleComponent}>Bookings</h1>
@@ -40,6 +48,9 @@ const BookingView = () => {
                     onChange={(e) => setSearch(e.target.value)}
                 />
             </InputGroup>
+            <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+                <i className="fa-solid fa-file-excel"></i> Download Excel
+            </Button>
             <Table striped bordered hover responsive>
                 <thead>
                     <tr>
@@ -57,7 +68,7 @@ const BookingView = () => {
                 <tbody>
                     {filteredBookings.map((item) => (
                         <tr key={item.booking_id}>
-                            <td><FormattedDate dateTime={item.booking_date}/></td>
+                            <td><FormattedDate dateTime={item.booking_date} /></td>
                             <td>{item.booking_id}</td>
                             <td>{item.booking_status}</td>
                             <td>{item.class_id}</td>
@@ -65,7 +76,7 @@ const BookingView = () => {
                             <td>{item.booking_user_name}</td>
                             <td>{item.class_name}</td>
                             <td>{item.class_start_time}</td>
-                            <td><FormattedDate dateTime={item.dateTime_class}/></td>
+                            <td><FormattedDate dateTime={item.dateTime_class} /></td>
                         </tr>
                     ))}
                 </tbody>

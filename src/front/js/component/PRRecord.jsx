@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react"; // Importar los hooks y el contexto de React
 import { Context } from "../store/appContext"; // Importar el contexto de la aplicación
 import { Form, Button, Table, Modal } from 'react-bootstrap'; // Importar componentes de React Bootstrap
+import * as XLSX from 'xlsx'; // Importar ibrería de JavaScript como xlsx
 import styles from "./PRRecord.module.css"; // Importar los estilos del componente
 import moment from 'moment'; // Importar la librería moment para el manejo de fechas
 
@@ -247,128 +248,156 @@ const PRRecord = () => {
         setFilteredMovements(filtered);
     }, [search, movements]);
 
+    const downloadExcel = () => {
+        // Mapea los registros de usuario para incluir el nombre del movimiento en lugar de solo el ID
+        const dataToExport = userRecords.map(record => {
+            // Encuentra el nombre del movimiento correspondiente al movement_id del registro
+            const movementName = movements.find(m => m.id === record.movement_id)?.name || "N/A";
+            // Devuelve un nuevo objeto que incluye todos los datos del registro original más el nombre del movimiento
+            return {
+                ...record,
+                movement_name: movementName,
+            };
+        });
+
+        // Convierte los datos a exportar en una hoja de cálculo utilizando la biblioteca XLSX
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+
+        // Crea un nuevo libro de trabajo (workbook) de Excel
+        const wb = XLSX.utils.book_new();
+
+        // Agrega la hoja de cálculo al libro de trabajo con el nombre 'PRrecords'
+        XLSX.utils.book_append_sheet(wb, ws, 'PRrecords');
+
+        // Escribe el libro de trabajo en un archivo llamado 'PRrecords.xlsx'
+        XLSX.writeFile(wb, 'PRrecords.xlsx');
+    };
+
     // Renderizado del componente
     return (
         <div className={styles.prRecordContainer}>
             <h1 className={styles.titleComponent}>PRrecord</h1>
             <Form className={styles.prRecordForm} onSubmit={handleSubmit}>
-            <div className={styles.fieldsRow}>
-                <Form.Group controlId="movement" className={styles.formGroup}>
-                    <Form.Label className={styles.formLabel}>Movement</Form.Label>
+                <div className={styles.fieldsRow}>
+                    <Form.Group controlId="movement" className={styles.formGroup}>
+                        <Form.Label className={styles.formLabel}>Movement</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={selectedMovement}
+                            onClick={() => setShowModal(true)}
+                            readOnly
+                            placeholder="Select movement"
+                            className={styles.formControl}
+                        />
+                    </Form.Group>
+
+                    {unit === 'kg' && (
+                        <Form.Group controlId="kg" className={styles.formGroup}>
+                            <Form.Label className={styles.formLabel}>Weight (kg)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={kg}
+                                onChange={handleKgChange}
+                                placeholder="Enter weight in kg"
+                                className={styles.formControl}
+                            />
+                        </Form.Group>
+                    )}
+
+                    {unit === 'lb' && (
+                        <Form.Group controlId="lb" className={styles.formGroup}>
+                            <Form.Label className={styles.formLabel}>Weight (lb)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={lb}
+                                onChange={handleLbChange}
+                                placeholder="Enter weight in lb"
+                                className={styles.formControl}
+                            />
+                        </Form.Group>
+                    )}
+
+                    {unit === 'km_min' && (
+                        <>
+                            <Form.Group controlId="distance" className={styles.formGroup}>
+                                <Form.Label className={styles.formLabel}>Distance (km)</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={value}
+                                    onChange={handleValueChange}
+                                    placeholder="Enter distance in km"
+                                    className={styles.formControl}
+                                />
+                            </Form.Group>
+                            <Form.Group controlId="time" className={styles.formGroup}>
+                                <Form.Label className={styles.formLabel}>Time (min)</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={time}
+                                    onChange={handleTimeChange}
+                                    placeholder="Enter time in minutes"
+                                    className={styles.formControl}
+                                />
+                            </Form.Group>
+                        </>
+                    )}
+
+                    {unit === 'cal_min' && (
+                        <>
+                            <Form.Group controlId="calories" className={styles.formGroup}>
+                                <Form.Label className={styles.formLabel}>Calories (cal)</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={value}
+                                    onChange={handleValueChange}
+                                    placeholder="Enter calories"
+                                    className={styles.formControl}
+                                />
+                            </Form.Group>
+                            <Form.Group controlId="time" className={styles.formGroup}>
+                                <Form.Label className={styles.formLabel}>Time (min)</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    value={time}
+                                    onChange={handleTimeChange}
+                                    placeholder="Enter time in minutes"
+                                    className={styles.formControl}
+                                />
+                            </Form.Group>
+                        </>
+                    )}
+
+                    {unit === 'reps' && (
+                        <Form.Group controlId="reps" className={styles.formGroup}>
+                            <Form.Label className={styles.formLabel}>Repetitions</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={value}
+                                onChange={handleValueChange}
+                                placeholder="Enter repetitions"
+                                className={styles.formControl}
+                            />
+                        </Form.Group>
+                    )}
+
+                    <Button variant="primary" type="submit" className={styles.formButton}>
+                        Save Record
+                    </Button>
+                </div>
+                <Form.Group controlId="searchMovement" className={styles.searchGroup}>
                     <Form.Control
                         type="text"
-                        value={selectedMovement}
-                        onClick={() => setShowModal(true)}
-                        readOnly
-                        placeholder="Select movement"
-                        className={styles.formControl}
+                        placeholder="Search movements"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className={styles.fullWidthControl}
                     />
                 </Form.Group>
-
-                {unit === 'kg' && (
-                    <Form.Group controlId="kg" className={styles.formGroup}>
-                        <Form.Label className={styles.formLabel}>Weight (kg)</Form.Label>
-                        <Form.Control
-                            type="number"
-                            value={kg}
-                            onChange={handleKgChange}
-                            placeholder="Enter weight in kg"
-                            className={styles.formControl}
-                        />
-                    </Form.Group>
-                )}
-
-                {unit === 'lb' && (
-                    <Form.Group controlId="lb" className={styles.formGroup}>
-                        <Form.Label className={styles.formLabel}>Weight (lb)</Form.Label>
-                        <Form.Control
-                            type="number"
-                            value={lb}
-                            onChange={handleLbChange}
-                            placeholder="Enter weight in lb"
-                            className={styles.formControl}
-                        />
-                    </Form.Group>
-                )}
-
-                {unit === 'km_min' && (
-                    <>
-                        <Form.Group controlId="distance" className={styles.formGroup}>
-                            <Form.Label className={styles.formLabel}>Distance (km)</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={value}
-                                onChange={handleValueChange}
-                                placeholder="Enter distance in km"
-                                className={styles.formControl}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="time" className={styles.formGroup}>
-                            <Form.Label className={styles.formLabel}>Time (min)</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={time}
-                                onChange={handleTimeChange}
-                                placeholder="Enter time in minutes"
-                                className={styles.formControl}
-                            />
-                        </Form.Group>
-                    </>
-                )}
-
-                {unit === 'cal_min' && (
-                    <>
-                        <Form.Group controlId="calories" className={styles.formGroup}>
-                            <Form.Label className={styles.formLabel}>Calories (cal)</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={value}
-                                onChange={handleValueChange}
-                                placeholder="Enter calories"
-                                className={styles.formControl}
-                            />
-                        </Form.Group>
-                        <Form.Group controlId="time" className={styles.formGroup}>
-                            <Form.Label className={styles.formLabel}>Time (min)</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={time}
-                                onChange={handleTimeChange}
-                                placeholder="Enter time in minutes"
-                                className={styles.formControl}
-                            />
-                        </Form.Group>
-                    </>
-                )}
-
-                {unit === 'reps' && (
-                    <Form.Group controlId="reps" className={styles.formGroup}>
-                        <Form.Label className={styles.formLabel}>Repetitions</Form.Label>
-                        <Form.Control
-                            type="number"
-                            value={value}
-                            onChange={handleValueChange}
-                            placeholder="Enter repetitions"
-                            className={styles.formControl}
-                        />
-                    </Form.Group>
-                )}
-
-                <Button variant="primary" type="submit" className={styles.formButton}>
-                    Save Record
+                <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+                    <i className="fa-solid fa-file-excel"></i> Download Excel
                 </Button>
-                </div>
-                <Form.Group  controlId="searchMovement" className={styles.searchGroup}>
-                <Form.Control
-                    type="text"
-                    placeholder="Search movements"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className={styles.fullWidthControl}
-                />
-            </Form.Group>
             </Form>
-            
+
 
             <div className={styles.tableContainer}>
                 <Table striped bordered hover className={styles.prRecordTable}>
@@ -408,8 +437,8 @@ const PRRecord = () => {
                                         title="Delete"
                                     >
                                         Delete
-                                    </Button>                               
-                                     </td>
+                                    </Button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

@@ -1,5 +1,6 @@
 .prRecordContainer {
-    background-color: #E6E6E9; /* Fondo gris claro */
+    background-color: #E6E6E9;
+    /* Fondo gris claro */
     border-radius: 5px;
 }
 
@@ -12,13 +13,16 @@
 
 .fieldsRow {
     display: flex;
-    flex-wrap: wrap; /* Permite que los elementos se ajusten en pantallas pequeñas */
-    align-items: center; /* Alinea verticalmente los elementos */
+    flex-wrap: wrap;
+    /* Permite que los elementos se ajusten en pantallas pequeñas */
+    align-items: center;
+    /* Alinea verticalmente los elementos */
     gap: 10px;
 }
 
 .formGroup {
-    flex: 1; /* Permite que los campos de formulario se expandan para llenar el espacio */
+    flex: 1;
+    /* Permite que los campos de formulario se expandan para llenar el espacio */
     display: flex;
     flex-direction: column;
 }
@@ -26,7 +30,8 @@
 .formLabel {
     font-weight: bold;
     color: #3C403F;
-    margin-bottom: 1px; /* Ajuste visual para la etiqueta */
+    margin-bottom: 1px;
+    /* Ajuste visual para la etiqueta */
     font-size: small;
     margin-left: 5px
 }
@@ -37,19 +42,23 @@
 }
 
 .formButton {
-    background-color: #5D7266; /* Verde claro */
+    background-color: #5D7266;
+    /* Verde claro */
     border: none;
     font-size: 16px;
     cursor: pointer;
-    padding: 8px 12px; /* Ajuste para mejor toque visual y clic */
+    padding: 8px 12px;
+    /* Ajuste para mejor toque visual y clic */
 }
 
 .formButton:hover {
-    background-color: #3C403F; /* Verde un poco más oscuro */
+    background-color: #3C403F;
+    /* Verde un poco más oscuro */
 }
 
 .searchGroup {
-    width: 100%; /* Asegura que el grupo de búsqueda ocupe todo el ancho */
+    width: 100%;
+    /* Asegura que el grupo de búsqueda ocupe todo el ancho */
 }
 
 .fullWidthControl {
@@ -59,9 +68,12 @@
 }
 
 .tableContainer {
-    overflow-x: auto; /* Asegura que la tabla pueda desplazarse horizontalmente en pantallas pequeñas */
-    -webkit-overflow-scrolling: touch; /* Permite un desplazamiento suave en dispositivos táctiles */
-    margin-bottom: 20px; /* Espacio debajo de la tabla */
+    overflow-x: auto;
+    /* Asegura que la tabla pueda desplazarse horizontalmente en pantallas pequeñas */
+    -webkit-overflow-scrolling: touch;
+    /* Permite un desplazamiento suave en dispositivos táctiles */
+    margin-bottom: 20px;
+    /* Espacio debajo de la tabla */
 }
 
 .prRecordTable {
@@ -69,7 +81,8 @@
     border-collapse: collapse;
 }
 
-.prRecordTable th, .prRecordTable td {
+.prRecordTable th,
+.prRecordTable td {
     border: 1px solid #dddddd;
     text-align: left;
     padding: 8px;
@@ -77,7 +90,8 @@
 }
 
 .prRecordTable th {
-    background-color: #A8A7A8; /* Fondo gris claro */
+    background-color: #A8A7A8;
+    /* Fondo gris claro */
 }
 
 .prRecordTable tr:nth-child(even) {
@@ -87,20 +101,22 @@
 .actionButtonDelete {
     margin-right: 5px;
     width: 40%;
-    background-color: #937863; /* Marrón para eliminar */
+    background-color: #937863;
+    /* Marrón para eliminar */
     border: none;
     font-size: 12px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 
-    
+
 }
 
 .actionButtonEdit {
     margin-right: 5px;
     width: 40%;
-    background-color: #A8A7A8; /* Gris para editar */
+    background-color: #A8A7A8;
+    /* Gris para editar */
     border: none;
     font-size: 12px;
     overflow: hidden;
@@ -114,8 +130,11 @@
         flex-direction: column;
     }
 
-    .formGroup, .formButton, .searchGroup {
-        width: 100%; /* Asegura que cada elemento ocupe todo el ancho en pantallas pequeñas */
+    .formGroup,
+    .formButton,
+    .searchGroup {
+        width: 100%;
+        /* Asegura que cada elemento ocupe todo el ancho en pantallas pequeñas */
     }
 }
 
@@ -129,7 +148,8 @@
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
-    z-index: 1050; /* Incrementa este valor */
+    z-index: 1050;
+    /* Incrementa este valor */
     background-color: #E6E6E9;
     border-radius: 8px;
     padding: 20px;
@@ -148,10 +168,21 @@
 }
 
 .movementButton:hover {
-    background-color: #A8A7A8; /* Verde un poco más oscuro */
+    background-color: #A8A7A8;
+    /* Verde un poco más oscuro */
     border-color: #A8A7A8;
 }
 
 .titleComponent {
     color: var(--color-green);
+}
+
+.buttonExcel {
+    display: block;
+    /* Centra el botón horizontalmente y añade margen inferior */
+    font-size: 5px;
+    /* Ajusta el tamaño de la fuente del botón */
+    padding: 5px 10px;
+    /* Añade padding para hacer el botón más pequeño */
+    width: 15%;
 }

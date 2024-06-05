@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Context } from '../store/appContext';
-import { Table, Form, InputGroup, FormControl } from 'react-bootstrap';
+import { Table, Form, InputGroup, FormControl, Button } from 'react-bootstrap';
+import * as XLSX from 'xlsx';
 import styles from './TransactionsTable.module.css';
 
 const TransactionsTable = () => {
@@ -22,6 +23,13 @@ const TransactionsTable = () => {
         }
     }, [search, store.payments]);
 
+    const downloadExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(filteredPayments);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+        XLSX.writeFile(wb, 'Transactions.xlsx');
+    };
+
     return (
         <div className={styles.tableContainer}>
             <h1 className={styles.titleComponent}>Transactions</h1>
@@ -32,6 +40,9 @@ const TransactionsTable = () => {
                     onChange={(e) => setSearch(e.target.value)}
                 />
             </InputGroup>
+            <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+                <i className="fa-solid fa-file-excel"></i> Download Excel
+            </Button>
             <div className="table-responsive">
                 <Table striped bordered hover className="table-sm">
                     <thead>
@@ -59,7 +70,6 @@ const TransactionsTable = () => {
                                 <td>{payment.payment_method}</td>
                                 <td>{payment.transaction_reference}</td>
                                 <td>{payment.description}</td>
-
                                 <td>{payment.card_number}</td>
                                 <td>
                                     {payment.card_type === 'visa' && <i className="fa-brands fa-cc-visa"></i>}

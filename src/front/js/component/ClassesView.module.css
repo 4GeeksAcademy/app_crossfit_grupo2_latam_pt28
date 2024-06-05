@@ -1,13 +1,15 @@
 .classesViewContainer {
     padding: 20px;
-    background-color: #E6E6E9; /* Fondo gris claro */
+    background-color: #E6E6E9;
+    /* Fondo gris claro */
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     font-size: small;
 }
 
 .title {
-    color: #3C403F; /* Color oscuro */
+    color: #3C403F;
+    /* Color oscuro */
     margin-bottom: 20px;
     text-align: center;
 }
@@ -19,7 +21,8 @@
     border-spacing: 0;
     border-radius: 10px;
     overflow: hidden;
-    background-color: #FFF; /* Fondo blanco */
+    background-color: #FFF;
+    /* Fondo blanco */
 }
 
 .table th,
@@ -28,12 +31,15 @@
 }
 
 .table th {
-    background-color: #A8A7A8; /* Fondo gris claro para encabezados */
-    color: #3C403F; /* Texto oscuro */
+    background-color: #A8A7A8;
+    /* Fondo gris claro para encabezados */
+    color: #3C403F;
+    /* Texto oscuro */
 }
 
 .table tr:nth-child(even) {
-    background-color: #F8F9FA; /* Fondo gris claro para filas pares */
+    background-color: #F8F9FA;
+    /* Fondo gris claro para filas pares */
 }
 
 .tableRow {
@@ -41,11 +47,13 @@
 }
 
 .tableRow:hover {
-    background-color: #D3D3D3; /* Fondo más oscuro al pasar el ratón */
+    background-color: #D3D3D3;
+    /* Fondo más oscuro al pasar el ratón */
 }
 
 .editButton {
-    background-color: #5D7266; /* Verde claro */
+    background-color: #5D7266;
+    /* Verde claro */
     color: white;
     border: none;
     border-radius: 5px;
@@ -56,13 +64,23 @@
 }
 
 .editButton:hover {
-    background-color: #3C403F; /* Verde más oscuro al pasar el ratón */
+    background-color: #3C403F;
+    /* Verde más oscuro al pasar el ratón */
 }
 
-.titlemodal{
+.titlemodal {
     color: gray;
 }
 
 .titleComponent {
     color: var(--color-green);
+}
+
+.buttonExcel {
+    display: block;
+    /* Centra el botón horizontalmente y añade margen inferior */
+    font-size: 5px;
+    /* Ajusta el tamaño de la fuente del botón */
+    padding: 5px 10px;
+    /* Añade padding para hacer el botón más pequeño */
 }
