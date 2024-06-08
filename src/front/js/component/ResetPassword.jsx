@@ -13,13 +13,15 @@ const ResetPassword = () => {
 
     const query = useQuery(); // Obtiene los parámetros de búsqueda de la URL.
     const token = query.get('token'); // Extrae el token de los parámetros de búsqueda.
-  
+
     const [password, setPassword] = useState(''); // Estado para almacenar la nueva contraseña
     const [confirmPassword, setConfirmPassword] = useState(''); // Estado para confirmar la nueva contraseña
     const [message, setMessage] = useState(''); // Estado para almacenar mensajes de éxito
     const [error, setError] = useState(''); // Estado para almacenar mensajes de error
     const [showModal, setShowModal] = useState(false); // Estado para controlar la visibilidad del modal
     const [userId, setUserId] = useState(null); // Estado para almacenar el ID del usuario
+    const [showPassword, setShowPassword] = useState(false); // Estado para manejar la visibilidad de la contraseña
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Estado para manejar la visibilidad de la confirmación de la contraseña
 
     // useEffect para verificar el token cuando el componente se monta
     useEffect(() => {
@@ -43,8 +45,22 @@ const ResetPassword = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault(); // Previene el comportamiento predeterminado del formulario
+
+        // Validación de la contraseña utilizando una expresión regular
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[@#$%^&+=*])(?=.*[0-9a-zA-Z]).{8,}$/; // Se define una expresión regular para validar la contraseña
+        if (!passwordRegex.test(password)) { // Se verifica si la contraseña cumple con los requisitos
+            setError("Password must be at least 8 characters long, contain an uppercase letter, a number, and a special character (#, @, $, %, ^, &, +, =, *)."); // Muestra un mensaje de error si la contraseña no cumple con los requisitos
+            setTimeout(() => {
+                setError(""); // borra el mensaje de error
+            }, 3000);
+            return; // Se detiene el proceso si la contraseña no cumple con los requisitos
+        }
+
         if (password !== confirmPassword) { // Verifica si las contraseñas coinciden
             setError('Passwords do not match'); // Almacena un mensaje de error si no coinciden
+            setTimeout(() => {
+                setError(""); // borra el mensaje de error
+            }, 3000);
             return;
         }
         try {
@@ -82,29 +98,55 @@ const ResetPassword = () => {
         return <div>Loading...</div>;
     }
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword); // Cambiar el estado de visibilidad de la contraseña
+    };
+
+    const toggleConfirmPasswordVisibility = () => {
+        setShowConfirmPassword(!showConfirmPassword); // Cambiar el estado de visibilidad de la confirmación de la contraseña
+    };
+
     return (
         <div className={styles.resetPassword}> {/* Aplica estilos CSS */}
             <h2 className={styles.h2}>Reset Password</h2> {/* Título del formulario */}
             <Form onSubmit={handleSubmit} className={styles.form}>
                 <Form.Group>
                     <Form.Label className={styles.label}>New Password:</Form.Label> {/* Etiqueta para la nueva contraseña */}
-                    <Form.Control
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)} // Actualiza el estado de password
-                        className={styles.input}
-                        required
-                    />
+                    <div className={styles.passwordContainer}>
+                        <Form.Control
+                            type={showPassword ? "text" : "password"} // Cambiar el tipo de input según el estado de visibilidad
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)} // Actualiza el estado de password
+                            className={styles.input}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className={styles.passwordToggle}
+                            onClick={togglePasswordVisibility}
+                        >
+                            <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i> {/* Ícono de visibilidad */}
+                        </button>
+                    </div>
                 </Form.Group>
                 <Form.Group>
                     <Form.Label className={styles.label}>Confirm Password:</Form.Label> {/* Etiqueta para confirmar la contraseña */}
-                    <Form.Control
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)} // Actualiza el estado de confirmPassword
-                        className={styles.input}
-                        required
-                    />
+                    <div className={styles.passwordContainer}>
+                        <Form.Control
+                            type={showConfirmPassword ? "text" : "password"} // Cambiar el tipo de input según el estado de visibilidad
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)} // Actualiza el estado de confirmPassword
+                            className={styles.input}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className={styles.passwordToggle}
+                            onClick={toggleConfirmPasswordVisibility}
+                        >
+                            <i className={showConfirmPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i> {/* Ícono de visibilidad */}
+                        </button>
+                    </div>
                 </Form.Group>
                 <Button variant="primary" type="submit" className={styles.button}>Reset Password</Button> {/* Botón para enviar el formulario */}
             </Form>
@@ -112,18 +154,18 @@ const ResetPassword = () => {
             {error && <Alert variant="danger" className={styles.error}>{error}</Alert>} {/* Muestra el mensaje de error */}
             <Modal show={showModal} onHide={() => setShowModal(false)} className={styles.modal}>
                 <div className={styles.modalNotification}>
-                <Modal.Header>
-                    <Modal.Title>Password Reset Successful</Modal.Title> {/* Título del modal */}
-                </Modal.Header>
-                <Modal.Body>
-                    <p>{message}</p> {/* Muestra el mensaje de éxito en el modal */}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="primary" onClick={() => setShowModal(false)}>
-                        Close
-                    </Button>
-                </Modal.Footer>
-                </div> 
+                    <Modal.Header>
+                        <Modal.Title>Password Reset Successful</Modal.Title> {/* Título del modal */}
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p>{message}</p> {/* Muestra el mensaje de éxito en el modal */}
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="primary" onClick={() => setShowModal(false)}>
+                            Close
+                        </Button>
+                    </Modal.Footer>
+                </div>
             </Modal>
         </div>
     );

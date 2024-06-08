@@ -9,6 +9,7 @@ const Login = () => {
 
     const [email, setEmail] = useState(""); // Estado local para el correo electrónico con su respectivo setter.
     const [password, setPassword] = useState(""); // Estado local para la contraseña con su respectivo setter.
+    const [showPassword, setShowPassword] = useState(false); // Estado para manejar la visibilidad de la contraseña.
 
     const handleLogin = async (e) => {
         e.preventDefault(); // Previene el comportamiento por defecto del formulario (recargar la página).
@@ -56,7 +57,6 @@ const Login = () => {
     }, [navigate]); // El hook useEffect depende de navigate para asegurar que se use el último disponible.
 
     const renderLoginResponse = () => {
-
         if (store.isAuthenticatedMessage != null) {
             if (store.isAuthenticatedMessage === false) {
                 return (
@@ -74,6 +74,10 @@ const Login = () => {
         }
     };
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword); // Cambia el estado de visibilidad de la contraseña.
+    };
+
     return (
         <div className={styles.loginform} id="login">
             <h2>Log in</h2>
@@ -87,14 +91,27 @@ const Login = () => {
                 </label>
                 <label className="labels">
                     Password:
-                    <input type="password" name="password" value={password.trim()} onChange={e => setPassword(e.target.value)} required />
+                    <div className={styles.passwordContainer}>
+                        <input
+                            type={showPassword ? "text" : "password"} // Cambiar el tipo de input según el estado de visibilidad
+                            name="password"
+                            value={password.trim()}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className={styles.passwordToggle}
+                            onClick={togglePasswordVisibility}
+                        >
+                            <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i> {/* Ícono de visibilidad */}
+                        </button>
+                    </div>
                 </label>
-
                 <button type="submit" className={styles.submitButtonLogin}>Log in</button>
                 <Link to="/PasswordResetRequest">
                     Forgot your password?
                 </Link>
-
                 <div className="rememberMe">
                     <input type="checkbox" />
                     <span>Remember me</span>
@@ -109,4 +126,5 @@ const Login = () => {
     );
 };
 
-export default Login; 
+export default Login;
+

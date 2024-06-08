@@ -1,18 +1,33 @@
+/* Login.module.css */
 .loginform {
-  width: 100%;  /* Toma el 100% del ancho de su contenedor hasta 400px */
-  max-width: 400px;  /* Limita el ancho máximo del formulario */
-  height: auto;  /* Altura automática basada en el contenido */
-  padding: 20px;  /* Espaciado interno */
-  margin: auto;  /* Centrado horizontal */
-  position: absolute;  /* Posición absoluta para permitir centrado vertical */
-  top: 50%;  /* Posiciona el formulario en el centro vertical del viewport */
-  left: 50%;  /* Posiciona el formulario en el centro horizontal del viewport */
-  transform: translate(-50%, -50%);  /* Ajusta la posición exacta del centro */
-  border: 1px solid #A8A7A8;  /* Borde con color ajustado */
-  border-radius: 10px;  /* Bordes redondeados */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);  /* Sombra ligera para 3D */
-  background: rgb(255 255 255 / 20%);  /* Fondo translúcido */
-  color: #E6E6E9;  /* Color de texto claro */
+  width: 100%;
+  /* Toma el 100% del ancho de su contenedor hasta 400px */
+  max-width: 400px;
+  /* Limita el ancho máximo del formulario */
+  height: auto;
+  /* Altura automática basada en el contenido */
+  padding: 20px;
+  /* Espaciado interno */
+  margin: auto;
+  /* Centrado horizontal */
+  position: absolute;
+  /* Posición absoluta para permitir centrado vertical */
+  top: 50%;
+  /* Posiciona el formulario en el centro vertical del viewport */
+  left: 50%;
+  /* Posiciona el formulario en el centro horizontal del viewport */
+  transform: translate(-50%, -50%);
+  /* Ajusta la posición exacta del centro */
+  border: 1px solid #A8A7A8;
+  /* Borde con color ajustado */
+  border-radius: 10px;
+  /* Bordes redondeados */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  /* Sombra ligera para 3D */
+  background: rgb(255 255 255 / 20%);
+  /* Fondo translúcido */
+  color: #E6E6E9;
+  /* Color de texto claro */
 }
 
 .loginform h2 {
@@ -23,11 +38,14 @@ label {
   display: block;
 }
 
-input[type="text"], input[type="password"], input[type="email"] {
+input[type="text"],
+input[type="password"],
+input[type="email"] {
   width: 100%;
   height: 30px;
   padding: 10px;
-  border: 1px solid #A8A7A8; /* Ajustado a la paleta de colores */
+  border: 1px solid #A8A7A8;
+  /* Ajustado a la paleta de colores */
   border-radius: 5px;
 }
 
@@ -40,13 +58,16 @@ input[type="text"], input[type="password"], input[type="email"] {
   padding: 10px;
   border: none;
   border-radius: 5px;
-  background-color: #5D7266; /* Ajustado a la paleta de colores */
-  color: #E6E6E9; /* Texto en color claro */
+  background-color: #5D7266;
+  /* Ajustado a la paleta de colores */
+  color: #E6E6E9;
+  /* Texto en color claro */
   cursor: pointer;
 }
 
 .submitButtonLogin:hover {
-  background-color: #937863; /* Ajustado a la paleta de colores */
+  background-color: #937863;
+  /* Ajustado a la paleta de colores */
 }
 
 .rememberMe {
@@ -68,26 +89,49 @@ a:hover {
   color: #23527c;
 }
 
+/* Contenedor y botón de alternar visibilidad de la contraseña */
+.passwordContainer {
+  position: relative;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 10px;
+  color: gray;
+  transform: translateY(-56%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
 
 /* Media queries para ajustes en pantallas específicas */
 @media (max-width: 767px) {
   .loginform {
-    padding: 10px;  /* Menos padding */
-    max-width: 95%;  /* Aumenta el ancho en pantallas muy pequeñas */
+    padding: 10px;
+    /* Menos padding */
+    max-width: 95%;
+    /* Aumenta el ancho en pantallas muy pequeñas */
   }
 
-  input[type="text"], input[type="password"], input[type="email"] {
-    padding: 5px;  /* Menos padding en los inputs */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"] {
+    padding: 5px;
+    /* Menos padding en los inputs */
   }
 
   .submitButtonLogin {
-    padding: 5px;  /* Menor padding en el botón */
+    padding: 5px;
+    /* Menor padding en el botón */
   }
 }
 
 @media (min-width: 1200px) {
   .loginform {
-    max-width: 500px;  /* Mayor ancho máximo para más espacio */
-    padding: 30px;  /* Más padding interno */
+    max-width: 500px;
+    /* Mayor ancho máximo para más espacio */
+    padding: 30px;
+    /* Más padding interno */
   }
 }

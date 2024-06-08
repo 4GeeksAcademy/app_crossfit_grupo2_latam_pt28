@@ -4,6 +4,7 @@ import { Context } from "../store/appContext";
 import { Modal, Button } from "react-bootstrap";
 import styles from "./Singup.module.css"; // Importa los estilos CSS
 
+
 const Signup = () => {
     const { store, actions } = useContext(Context);
     const { creationState } = store;
@@ -24,6 +25,9 @@ const Signup = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
+    const [errorMessage, setErrorMessage] = useState(""); // Estado para almacenar el mensaje de error
+    const [showPassword, setShowPassword] = useState(false); // Estado para manejar la visibilidad de la contraseña
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -41,6 +45,27 @@ const Signup = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validación del email utilizando una expresión regular
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Se define una expresión regular para validar el formato del email
+        if (!emailRegex.test(userDetails.email)) { // Se verifica si el email cumple con el formato esperado
+            setErrorMessage("Please enter a valid email address."); // Muestra un mensaje de error si el email no es válido
+            setTimeout(() => {
+                setErrorMessage("")
+            }, 2000);
+            return; // Se detiene el proceso si el email no es válido
+        }
+
+        // Restricciones adicionales para la contraseña (8 caracteres alfanuméricos, una mayúscula y un carácter especial)
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[@#$%^&+=*])(?=.*[0-9a-zA-Z]).{8,}$/; // Se define una expresión regular para validar la contraseña
+        if (!passwordRegex.test(userDetails.password)) { // Se verifica si la contraseña cumple con los requisitos
+            setErrorMessage("Password must be at least 8 characters long, contain an uppercase letter, a number, and a special character (#, @, $, %, ^, &, +, =, *)."); // Muestra un mensaje de error si la contraseña no cumple con los requisitos
+            setTimeout(() => {
+                setErrorMessage("")
+            }, 2000);
+            return; // Se detiene el proceso si la contraseña no cumple con los requisitos
+        }
+
         const result = await actions.createUser(userDetails);
         if (result) {
             setModalMessage(store.creationState.message);
@@ -58,10 +83,16 @@ const Signup = () => {
         }
     };
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword); // Cambiar el estado de visibilidad de la contraseña
+    };
+
+
     return (
         <div className={styles.container}>
             <form onSubmit={handleSubmit} className={styles.form}>
                 <h1>REGISTER</h1>
+                {errorMessage && <div className={styles.errorMessage}>{errorMessage}</div>} {/* Muestra el mensaje de error */}
                 <div className={styles.inputGroup}>
                     <label className={styles.label}>First Name</label>
                     <input type="text" className={styles.input} name="name" value={userDetails.name} onChange={handleChange} required />
@@ -80,7 +111,23 @@ const Signup = () => {
                 </div>
                 <div className={styles.inputGroup}>
                     <label className={styles.label}>Password</label>
-                    <input type="password" className={styles.input} name="password" value={userDetails.password} onChange={handleChange} required />
+                    <div className={styles.passwordContainer}>
+                        <input
+                            type={showPassword ? "text" : "password"} // Cambiar el tipo de input según el estado de visibilidad
+                            className={styles.input}
+                            name="password"
+                            value={userDetails.password}
+                            onChange={handleChange}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className={styles.passwordToggle}
+                            onClick={togglePasswordVisibility}
+                        >
+                            <i className={showPassword ? "fa-solid fa-eye-slash" : "fa-solid fa-eye"}></i> {/* Ícono de visibilidad */}
+                        </button>
+                    </div>
                 </div>
                 {userDetails.security_questions.map((sq, index) => (
                     <div key={index} className={styles.inputGroup}>
@@ -96,7 +143,7 @@ const Signup = () => {
                 ))}
                 <button type="submit" className={styles.buttonSave}>Sign up</button>
                 <p>
-                    Have an account? <Link to="/LoginUserV2" className={styles.link}>Login Here</Link>
+                    Have an account? <Link to="/Login" className={styles.link}>Login Here</Link>
                 </p>
             </form>
 

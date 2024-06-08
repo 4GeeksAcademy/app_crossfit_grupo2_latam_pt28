@@ -8,6 +8,10 @@
   max-width: 600px;
 }
 
+.errorMessage {
+  color: #A8A7A8;
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -15,7 +19,8 @@
   padding: 40px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  background-color: #3C403F; /* Ajustado a la paleta de colores */
+  background-color: #3C403F;
+  /* Ajustado a la paleta de colores */
   width: 100%;
   max-width: 400px;
 }
@@ -51,7 +56,8 @@
 .inputGroup select:focus,
 .inputGroup select:valid {
   outline: none;
-  border: 1.5px solid #5D7266; /* Ajustado a la paleta de colores */
+  border: 1.5px solid #5D7266;
+  /* Ajustado a la paleta de colores */
 }
 
 .securityQuestion {
@@ -82,7 +88,8 @@
 }
 
 .buttonSave {
-  background: #5D7266; /* Ajustado a la paleta de colores */
+  background: #5D7266;
+  /* Ajustado a la paleta de colores */
   color: white;
   border: none;
   border-radius: 1rem;
@@ -92,11 +99,13 @@
 }
 
 .buttonSave:hover {
-  background: #3C403F; /* Ajustado a la paleta de colores */
+  background: #3C403F;
+  /* Ajustado a la paleta de colores */
 }
 
 .link {
-  color: #5D7266; /* Ajustado a la paleta de colores */
+  color: #5D7266;
+  /* Ajustado a la paleta de colores */
   text-decoration: none;
 }
 
@@ -106,19 +115,20 @@
 
 @media (max-width: 768px) {
   .form {
-      padding: 10px;
+    padding: 10px;
   }
 
   .inputGroup {
-      margin-bottom: 10px;
+    margin-bottom: 10px;
   }
 
-  .inputGroup input, .inputGroup select {
-      padding: 8px;
+  .inputGroup input,
+  .inputGroup select {
+    padding: 8px;
   }
 
   .buttonSave {
-      padding: 8px 16px;
+    padding: 8px 16px;
   }
 }
 
@@ -143,4 +153,28 @@
 
 .modal-footer {
   border-top: 1px solid #A8A7A8;
+}
+
+.passwordContainer {
+  display: flex;
+  /* Usa el diseño flex para alinear el botón de visibilidad */
+  align-items: center;
+  /* Centra verticalmente el contenido */
+}
+
+.passwordToggle {
+  background: none;
+  /* Sin fondo */
+  border: none;
+  /* Sin borde */
+  position: absolute;
+  /* Posiciona absolutamente el botón */
+  right: 10px;
+  /* Alinea a la derecha dentro del contenedor */
+  top: 40%;
+  /* Centra verticalmente */
+  transform: translateY(-50%);
+  /* Ajusta la posición vertical */
+  cursor: pointer;
+  /* Cambia el cursor al pasar sobre el botón */
 }
