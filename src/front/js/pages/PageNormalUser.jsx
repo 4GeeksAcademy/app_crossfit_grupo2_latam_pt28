@@ -30,6 +30,7 @@ import PRRecord from "../component/PRRecord.jsx";
 import ReceiveMessages from "../component/ReceiveMessages.jsx";
 
 import Sidebar from "../component/Sidebar.jsx";
+import Timerwod from "../component/Timerwod.jsx";
 
 const PageNormalUser = () => {
     const { store, actions } = useContext(Context);
@@ -46,7 +47,7 @@ const PageNormalUser = () => {
         }
     }, [navigate]);
 
-    
+
     const handleOpenModal = (index) => {
         setCurrentSlide(index);
         setShow(true);
@@ -57,7 +58,7 @@ const PageNormalUser = () => {
     const components = [
         // { component: <CreateClasses />, name: "Create Classes" },
         // { component: <MyCalendar />, name: "My Calendar" },
-        { component: <ReceiveMessages showModal={!show} />, name: <i class="fa-solid fa-envelope"></i>},
+        { component: <ReceiveMessages showModal={!show} />, name: <i class="fa-solid fa-envelope"></i> },
         { component: <PrivateCalendar showModal={!show} />, name: <i class="fa-regular fa-calendar"></i> },
         // { component: <UserBooking />, name: "User Booking" },
         // { component: <BookingView />, name: "BookingView " },
@@ -72,6 +73,7 @@ const PageNormalUser = () => {
         // { component: <TransactionsTable />, name: "TransactionsTable " },
         // { component: <Users />, name: "Users " },
         { component: <PRRecord />, name: <i class="fa-solid fa-dumbbell"></i> },
+        { component: <Timerwod />, name: <i class="fa-solid fa-stopwatch-20"></i> },
     ];
 
     useEffect(() => {
@@ -80,7 +82,7 @@ const PageNormalUser = () => {
 
     return (
         <>
-        <Sidebar/>
+            <Sidebar />
             <h1>User Page</h1>
             <div className={styles.userDetailsContainer}>
                 {components.map((entry, index) => (
@@ -90,7 +92,7 @@ const PageNormalUser = () => {
                     </div>
                 ))}
             </div>
-    
+
             <Modal show={show} onHide={handleCloseModal} centered size="lg" className={styles.modalCustom}>
                 <Modal.Header closeButton className={styles.modalHeader}>
                     <Modal.Title className={styles.modalTitle}>{components[currentSlide].name}</Modal.Title>

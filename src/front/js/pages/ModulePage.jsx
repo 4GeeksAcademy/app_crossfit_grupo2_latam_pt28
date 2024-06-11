@@ -38,6 +38,8 @@ import Sidebar from "../component/Sidebar.jsx";
 import ReceiveMessages from "../component/ReceiveMessages.jsx";
 import SendMessage from "../component/SendMessage.jsx";
 
+import Timerwod from "../component/Timerwod.jsx";
+
 const ModulePage = () => {
     const { store, actions } = useContext(Context);
     const navigate = useNavigate();
@@ -84,6 +86,7 @@ const ModulePage = () => {
         { component: <PRRecord />, name: "PRRecord " },
         { component: <ReceiveMessages />, name: "Receive Messages" },
         { component: <SendMessage />, name: "SendMessage " },
+        { component: <Timerwod />, name: "Timerwod " },
     ];
 
     useEffect(() => {
@@ -92,7 +95,7 @@ const ModulePage = () => {
 
     return (
         <>
-        <Sidebar/>
+            <Sidebar />
             <h1>Master Page</h1>
             <div className={styles.userDetailsContainer}>
                 {components.map((entry, index) => (
@@ -102,7 +105,7 @@ const ModulePage = () => {
                     </div>
                 ))}
             </div>
-    
+
             <Modal show={show} onHide={handleCloseModal} centered size="lg" className={styles.modalCustom}>
                 <Modal.Header closeButton className={styles.modalHeader}>
                     <Modal.Title className={styles.modalTitle}>{components[currentSlide].name}</Modal.Title>
