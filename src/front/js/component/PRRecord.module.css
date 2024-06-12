@@ -175,6 +175,7 @@
 
 .titleComponent {
     color: var(--color-green);
+    padding: 10px;
 }
 
 .buttonExcel {
