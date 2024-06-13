@@ -10,7 +10,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: #f9f9f9;
+    background: var(--color-dark);
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -20,7 +20,7 @@
 
 .setupContainer h2 {
     margin-bottom: 20px;
-    color: #333;
+    color: var(--color-light);
 }
 
 .formGroup {
@@ -40,36 +40,41 @@
 
 .inlineFormGroup label {
     margin-right: 10px;
+    color: var(--color-light);
 }
 
 .formGroup label {
     margin-bottom: 5px;
     font-weight: bold;
-    color: #555;
+    color: var(--color-light);
 }
 
 .formGroup input,
 .formGroup select {
     width: 100%;
     padding: 10px;
-    border: 2px solid #ccc;
+    border: none;
     border-radius: 5px;
     font-size: 1em;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: var(--color-grey);
+    color: var(--color-dark);
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
 
 .inlineFormGroup input {
     width: 48%;
     padding: 10px;
-    border: 2px solid #ccc;
+    border: none;
     border-radius: 5px;
     font-size: 1em;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: var(--color-grey);
+    color: var(--color-dark);
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
 
 .formGroup input:focus,
 .formGroup select:focus {
-    border-color: #4a90e2;
+    background-color: var(--color-light);
     box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
 }
 
@@ -83,47 +88,60 @@
 .buttonGroup button {
     flex: 1;
     margin: 0 5px;
+    background-color: var(--color-green);
+    color: var(--color-light);
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 1em;
+    transition: background-color 0.3s;
+}
+
+.buttonGroup button:hover {
+    background-color: var(--color-brown);
 }
 
 .roundText {
     font-size: 1.5em;
     margin-bottom: 10px;
-    color: #4a90e2;
+    color: var(--color-light);
 }
 
 .timeText {
     font-size: 3em;
-    color: #000;
+    color: var(--color-light);
 }
 
 .startButton {
-    background-color: #4caf50;
+    background-color: var(--color-green);
     color: white;
     border: none;
 }
 
 .startButton:hover {
-    background-color: #45a049;
+    background-color: var(--color-brown);
 }
 
 .resetButton {
-    background-color: #f44336;
+    background-color: var(--color-brown);
     color: white;
     border: none;
 }
 
 .resetButton:hover {
-    background-color: #e53935;
+    background-color: var(--color-green);
 }
 
 /* Modal customization */
 .modalContent {
+    /* background-color: var(--color-dark); */
     /* background-color: #212529; */
     background-color: #000000;
-    color: white;
+    color: var(--color-light);
     border-bottom: none;
     border-top: none;
 }
+
 
 .modalTitle {
     text-align: center;

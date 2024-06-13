@@ -9,7 +9,7 @@ import styles from './Timerwod.module.css';
 // Importa componentes de iconos de FontAwesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Importa los iconos específicos de reproducción y pausa
-import { faPlay, faPause } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faVolumeXmark, faVolumeHigh } from '@fortawesome/free-solid-svg-icons';
 // Importa componentes de modal y botón de React Bootstrap
 import { Modal, Button } from 'react-bootstrap';
 
@@ -19,40 +19,67 @@ const Timerwod = () => {
     const [totalSeconds, setTotalSeconds] = useState(0); // Estado para los segundos totales
     const [isRunning, setIsRunning] = useState(false); // Estado para saber si el temporizador está en funcionamiento
     const [rounds, setRounds] = useState(1); // Estado para el número de rondas
-    const [restTime, setRestTime] = useState(0); // Estado para el tiempo de descanso
     const [currentRound, setCurrentRound] = useState(1); // Estado para la ronda actual
     const [countType, setCountType] = useState('countdown'); // Estado para el tipo de conteo (countdown o countup)
     const [roundDuration, setRoundDuration] = useState(0); // Estado para la duración de cada ronda
     const [restDuration, setRestDuration] = useState(0); // Estado para la duración del descanso
+    const [restTime, setRestTime] = useState(0); // Estado para el tiempo de descanso
     const [isResting, setIsResting] = useState(false); // Estado para saber si está en descanso
     const [restSeconds, setRestSeconds] = useState(0); // Estado para los segundos de descanso
     const [timerMode, setTimerMode] = useState('ForTime'); // Estado para el modo del temporizador (ForTime, AMRAP, etc.)
     const [showModal, setShowModal] = useState(false); // Estado para mostrar el modal
-    const [preCountdown, setPreCountdown] = useState(5); // Estado para la cuenta regresiva antes de empezar
+    const [preCountdown, setPreCountdown] = useState(10); // Estado para la cuenta regresiva antes de empezar
     const [showPreCountdown, setShowPreCountdown] = useState(false); // Estado para mostrar la cuenta regresiva
+    const [soundEnabled, setSoundEnabled] = useState(true); // Estado para controlar la reproducción de sonidos
+
 
     // useEffect para manejar el temporizador cuando está en funcionamiento
     useEffect(() => {
-        let timer;
-        if (isRunning) { // Si el temporizador está en funcionamiento
+        let timer; // Declara una variable para almacenar el identificador del intervalo de tiempo.
+
+        if (isRunning) { // Verifica si el temporizador está activo.
+            // Configura un intervalo que ejecuta una función cada 1000 milisegundos (1 segundo).
             timer = setInterval(() => {
-                if (isResting) { // Si está en descanso
-                    if (countType === 'countdown') { // Si el tipo de conteo es cuenta regresiva
-                        setRestSeconds(prev => prev - 1); // Decrementa los segundos de descanso
-                    } else { // Si el tipo de conteo es cuenta ascendente
-                        setRestSeconds(prev => prev + 1); // Incrementa los segundos de descanso
+                // Verifica si el temporizador está en su fase de descanso.
+                if (isResting) {
+                    // Verifica si el modo de conteo es regresivo.
+                    if (countType === 'countdown') {
+                        // Actualiza el estado de los segundos de descanso.
+                        setRestSeconds(prev => {
+                            // Si quedan exactamente 4 segundos (prev es 5 porque en este momento aún no se ha decrementado).
+                            if (prev === 5 && soundEnabled) {
+                                playSound('start.mp3'); // Reproduce el sonido de inicio.
+                            }
+                            return prev - 1; // Decrementa los segundos de descanso.
+                        });
+                    } else { // Si el modo de conteo es ascendente.
+                        // Actualiza el estado de los segundos de descanso.
+                        setRestSeconds(prev => {
+                            const newSeconds = prev + 1; // Calcula los nuevos segundos sumando uno.
+                            // Verifica si faltan exactamente 4 segundos para terminar el descanso.
+                            if ((restDuration - newSeconds) === 4 && soundEnabled) {
+                                playSound('start.mp3'); // Reproduce el sonido de inicio.
+                            }
+                            return newSeconds; // Devuelve los segundos actualizados.
+                        });
                     }
-                } else { // Si no está en descanso
-                    if (countType === 'countdown') { // Si el tipo de conteo es cuenta regresiva
-                        setTotalSeconds(prevTotalSeconds => prevTotalSeconds - 1); // Decrementa los segundos totales
-                    } else { // Si el tipo de conteo es cuenta ascendente
-                        setTotalSeconds(prevTotalSeconds => prevTotalSeconds + 1); // Incrementa los segundos totales
+                } else { // Si no está en descanso.
+                    // Verifica el tipo de conteo para los segundos totales.
+                    if (countType === 'countdown') {
+                        // Decrementa los segundos totales si el conteo es regresivo.
+                        setTotalSeconds(prevTotalSeconds => prevTotalSeconds - 1);
+                    } else { // Si el tipo de conteo es ascendente.
+                        // Incrementa los segundos totales si el conteo es ascendente.
+                        setTotalSeconds(prevTotalSeconds => prevTotalSeconds + 1);
                     }
                 }
-            }, 100); // Ejecuta cada segundo
+            }, 1000); // Establece el intervalo para ejecutarse cada segundo.
         }
-        return () => clearInterval(timer); // Limpia el temporizador cuando el componente se desmonta
-    }, [isRunning, countType, isResting]); // Dependencias del useEffect
+
+        // Función de limpieza que se ejecuta cuando el componente se desmonta o las dependencias cambian.
+        return () => clearInterval(timer);
+    }, [isRunning, countType, isResting, restDuration, soundEnabled]); // Lista de dependencias del useEffect.
+
 
     // useEffect para manejar el fin de la ronda y el temporizador
     useEffect(() => {
@@ -71,18 +98,23 @@ const Timerwod = () => {
 
     // useEffect para manejar la cuenta regresiva antes de empezar el temporizador
     useEffect(() => {
-        if (showPreCountdown && preCountdown > 0) { // Si se muestra la cuenta regresiva y el valor de la cuenta regresiva es mayor que 0
-            const timer = setTimeout(() => { // Configura un temporizador para contar hacia abajo
-                setPreCountdown(preCountdown - 1); // Decrementa la cuenta regresiva
-                playSound('beep.mp3'); // Reproduce un sonido de bip
-            }, 1000); // Ejecuta cada segundo
-            return () => clearTimeout(timer); // Limpia el temporizador cuando el componente se desmonta
-        } else if (showPreCountdown && preCountdown === 0) { // Si se muestra la cuenta regresiva y el valor de la cuenta regresiva es 0
-            setShowPreCountdown(false); // Deja de mostrar la cuenta regresiva
-            setIsRunning(true); // Inicia el temporizador
-            playSound('start.mp3'); // Reproduce un sonido de inicio
+        let timer;  // Declara una variable para almacenar el identificador del temporizador
+        if (showPreCountdown && preCountdown > 0) { // Verifica si la cuenta regresiva debe mostrarse y si el contador es mayor que 0
+            timer = setTimeout(() => {  // Establece un temporizador que se ejecuta después de 1 segundo
+                setPreCountdown(preCountdown - 1); // Decrementa el valor de preCountdown en 1 cada segundo
+                if (preCountdown > 4 && soundEnabled) { // condicion para manejar la reproduccion del sonido
+                    playSound('beep.mp3'); // Reproduce el sonido 'beep.mp3' si preCountdown es mayor que 4
+                } else if (preCountdown === 4 && soundEnabled) { // condicion para manejar la reproduccion del sonido
+                    playSound('start.mp3'); // Reproduce el sonido 'start.mp3' justo cuando preCountdown llega a 4
+                }
+            }, 1000); // El temporizador se ejecuta cada 1000 milisegundos (1 segundo)
+            return () => clearTimeout(timer); // Limpia el temporizador para evitar efectos no deseados o múltiples timers en ejecución
+        } else if (showPreCountdown && preCountdown === 0) {
+            setShowPreCountdown(false); // Oculta la cuenta regresiva cuando preCountdown llega a 0
+            setIsRunning(true); // Establece el temporizador en ejecución
         }
-    }, [showPreCountdown, preCountdown]); // Dependencias del useEffect
+    }, [showPreCountdown, preCountdown]); // Lista de dependencias que determina cuándo se debe volver a ejecutar el useEffect
+
 
     // Función para manejar el fin de la ronda
     const handleRoundEnd = () => {
@@ -92,9 +124,10 @@ const Timerwod = () => {
             setCurrentRound(prevRound => prevRound + 1); // Incrementa la ronda actual
             if (currentRound < rounds) { // Si la ronda actual es menor que el número total de rondas
                 setTotalSeconds(countType === 'countdown' ? roundDuration : 0); // Reinicia los segundos totales según el tipo de conteo
+                // if (soundEnabled) playSound('beep.mp3'); // Reproduce el sonido 'beep.mp3' para indicar el cambio de ronda
             } else { // Si la ronda actual es igual o mayor que el número total de rondas
                 setIsRunning(false); // Detiene el temporizador
-                playSound('alarm.mp3'); // Reproduce un sonido de alarma
+                if (soundEnabled) playSound('buzzer.mp3'); // Reproduce un sonido de alarma
             }
         } else { // Si no está en descanso
             if (currentRound < rounds) { // Si la ronda actual es menor que el número total de rondas
@@ -102,14 +135,15 @@ const Timerwod = () => {
                     setIsResting(true); // Inicia el descanso
                     setRestSeconds(countType === 'countdown' ? restDuration : 0); // Reinicia los segundos de descanso según el tipo de conteo
                     setTotalSeconds(countType === 'countdown' ? restDuration : 0); // Reinicia los segundos totales según el tipo de conteo
-                    playSound('rest.mp3'); // Reproduce un sonido de descanso
+                    if (soundEnabled) playSound('rest.mp3'); // Reproduce un sonido de descanso
                 } else { // Si la duración del descanso es 0
                     setCurrentRound(prevRound => prevRound + 1); // Incrementa la ronda actual
                     setTotalSeconds(countType === 'countdown' ? roundDuration : 0); // Reinicia los segundos totales según el tipo de conteo
+                    if (soundEnabled) playSound('beep.mp3'); // Reproduce el sonido 'beep.mp3' para indicar el cambio de ronda
                 }
             } else { // Si la ronda actual es igual o mayor que el número total de rondas
                 setIsRunning(false); // Detiene el temporizador
-                playSound('alarm.mp3'); // Reproduce un sonido de alarma
+                if (soundEnabled) playSound('buzzer.mp3'); // Reproduce un sonido de finalizacion
             }
         }
     };
@@ -120,7 +154,7 @@ const Timerwod = () => {
             setIsRunning(false); // Detiene el temporizador
         } else { // Si el temporizador no está en funcionamiento
             setShowPreCountdown(true); // Muestra la cuenta regresiva
-            setPreCountdown(5); // Establece la cuenta regresiva en 5
+            setPreCountdown(10); // Establece la cuenta regresiva en 5
         }
     };
 
@@ -141,14 +175,20 @@ const Timerwod = () => {
         const selectedSeconds = parseInt(document.getElementById('secondsInput').value, 10) || 0;
         const selectedRounds = parseInt(document.getElementById('roundsInput').value, 10) || 1;
         const selectedRestMinutes = parseInt(document.getElementById('restTimeInput').value, 10) || 0;
+        const selectedRestSeconds = parseInt(document.getElementById('restTimeSecondsInput').value, 10) || 0;
+
         // Calcula el tiempo inicial en segundos
         const initialTime = (selectedMinutes * 60) + selectedSeconds;
 
+        // Calcula el tiempo de descanso en segundos
+        const initialRestTime = (selectedRestMinutes * 60) + selectedRestSeconds;
+
+
         setTotalSeconds(countType === 'countdown' ? initialTime : 0); // Establece los segundos totales según el tipo de conteo
         setRounds(selectedRounds); // Establece el número de rondas
-        setRestTime(selectedRestMinutes); // Establece el tiempo de descanso en minutos
         setRoundDuration(initialTime); // Establece la duración de la ronda
-        setRestDuration(selectedRestMinutes * 60); // Convierte el tiempo de descanso a segundos
+        setRestDuration(initialRestTime); // Convierte el tiempo de descanso a segundos
+        setRestTime(selectedRestMinutes); // Establece el tiempo de descanso en minutos
         setCurrentRound(1); // Reinicia la ronda actual
         setIsResting(false); // Deja de estar en descanso
         setRestSeconds(countType === 'countdown' ? selectedRestMinutes * 60 : 0); // Reinicia los segundos de descanso según el tipo de conteo
@@ -174,10 +214,14 @@ const Timerwod = () => {
         setCountType(event.target.value); // Establece el tipo de conteo
     };
 
+    // Función para reproducir los sonidos
+    const toggleSound = () => setSoundEnabled(!soundEnabled);
     // Función para reproducir un sonido
     const playSound = (sound) => {
-        const audio = new Audio(`/sounds/${sound}`); // Crea un nuevo objeto de audio con el sonido especificado
-        audio.play(); // Reproduce el sonido
+        if (soundEnabled) {
+            const audio = new Audio(`/sounds/${sound}`); // Crea un nuevo objeto de audio con el sonido especificado
+            audio.play(); // Reproduce el sonido
+        }
     };
 
     // Calcula el porcentaje para la barra de progreso
@@ -202,7 +246,7 @@ const Timerwod = () => {
                         </select>
                     </div>
                     <div className={`${styles.formGroup} ${styles.inlineFormGroup}`}>
-                        <label htmlFor="minutesInput">Minutes:</label>
+                        <label htmlFor="minutesInput">Round (minutes):</label>
                         <input type="number" id="minutesInput" className={styles.input} min="0" step="1" defaultValue="0" />
                         <label htmlFor="secondsInput">Seconds:</label>
                         <input type="number" id="secondsInput" className={styles.input} min="0" max="59" step="1" defaultValue="0" />
@@ -211,9 +255,11 @@ const Timerwod = () => {
                         <label htmlFor="roundsInput">Rounds:</label>
                         <input type="number" id="roundsInput" className={styles.input} min="1" step="1" defaultValue="1" />
                     </div>
-                    <div className={styles.formGroup}>
+                    <div className={`${styles.formGroup} ${styles.inlineFormGroup}`}>
                         <label htmlFor="restTimeInput">Rest Time (minutes):</label>
                         <input type="number" id="restTimeInput" className={styles.input} min="0" step="1" defaultValue="0" />
+                        <label htmlFor="restTimeSecondsInput">Seconds:</label>
+                        <input type="number" id="restTimeSecondsInput" className={styles.input} min="0" max="59" step="1" defaultValue="0" />
                     </div>
                     <div className={styles.formGroup}>
                         <label htmlFor="countType">Count Type:</label>
@@ -223,11 +269,11 @@ const Timerwod = () => {
                         </select>
                     </div>
                     <div className={styles.buttonGroup}>
-                        <Button variant="primary" onClick={handleNext}>Next <i class="fa-solid fa-stopwatch-20"></i></Button>
+                        <Button variant="primary" onClick={handleNext}>Next <i className="fa-solid fa-stopwatch-20"></i></Button>
+                        <FontAwesomeIcon icon={soundEnabled ? faVolumeHigh : faVolumeXmark} onClick={toggleSound} style={{ color: soundEnabled ? 'green' : 'red', fontSize: '24px', cursor: 'pointer' }} /> {/* botón que controla el sonido */}
                     </div>
                 </div>
             )}
-
             <Modal show={showModal} onHide={resetTimer} className={`${styles.modal} ${styles.customModal}`}>
                 <Modal.Header closeButton className={styles.modalContent}>
                     <Modal.Title className={styles.modalTitle}>{timerMode}</Modal.Title>
@@ -235,12 +281,12 @@ const Timerwod = () => {
                 <Modal.Body className={styles.modalContent}>
                     <>
                         <div className={styles.roundText}>
-                            {showPreCountdown ? `Starting in ${preCountdown}` : (isResting ? 'Rest Time' : `Round ${currentRound}/${rounds}`)}
+                            {showPreCountdown ? `Starting in ${preCountdown}` : (isResting ? `Rest Time - ${updateDisplay()}` : `Round ${currentRound}/${rounds}`)} {/* lo que se renderiza por encima del círculo */}
                         </div>
                         <div className={styles.timeText}>
                             <CircularProgressbar
                                 value={percentage}
-                                text={showPreCountdown ? `${preCountdown}` : (isResting ? 'Rest Time' : updateDisplay())}
+                                text={showPreCountdown ? `${preCountdown}` : (isResting ? `Rest Time` : updateDisplay())} // {/* lo que se renderiza dentro del círculo */}
                                 styles={buildStyles({
                                     pathColor: progressBarColor,
                                     textColor: showPreCountdown ? 'red' : '#6c757d',
@@ -254,11 +300,12 @@ const Timerwod = () => {
                 <Modal.Footer className={styles.modalContent}>
                     <Button variant="secondary" onClick={resetTimer}>Reset</Button>
                     <Button variant="primary" onClick={startStopTimer}>
-                        {isRunning ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}
+                        {isRunning ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}   {/* botón que controla el reloj */}
                     </Button>
                 </Modal.Footer>
             </Modal>
         </div>
+
     );
 }
 
