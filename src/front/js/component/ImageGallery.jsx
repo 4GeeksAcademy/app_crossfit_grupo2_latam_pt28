@@ -12,19 +12,20 @@ const ImageGallery = () => {
 
     return (
         <>
-        <h1 className={styles.titleComponent}>movement gallery</h1>
-        <div className={styles.galleryContainer}>
-            <></>
-            {store.images.map((image, index) => (
-                <Card key={index} className={styles.card}>
-                    <Card.Img variant="top" src={image.img_url} alt={image.name} className={styles.image} />
-                    <Card.Body>
-                        <Card.Title className={styles.title}>{image.name}</Card.Title>
-                        <Card.Text className={styles.description}>{image.description}</Card.Text>
-                    </Card.Body>
-                </Card>
-            ))}
-        </div>
+            <div className={styles.titleContainer}>
+                <h1 className={styles.titleComponent}>Movement Gallery</h1>
+            </div>
+            <div className={styles.galleryContainer}>
+                {store.images.map((image, index) => (
+                    <Card key={index} className={styles.card}>
+                        <Card.Img variant="top" src={image.img_url} alt={image.name} className={styles.image} />
+                        <Card.Body>
+                            <Card.Title className={styles.title}>{image.name}</Card.Title>
+                            <Card.Text className={styles.description}>{image.description}</Card.Text>
+                        </Card.Body>
+                    </Card>
+                ))}
+            </div>
         </>
     );
 };
