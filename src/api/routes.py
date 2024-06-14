@@ -1936,3 +1936,139 @@ def handle_contact_form():
     except Exception as e:
         # Retorna un mensaje de error si ocurre algún problema durante el proceso
         return jsonify({'error': 'Failed to send contact request: ' + str(e)}), 500
+
+
+
+#-------------------------------------------------ENPOINT PARA EL E-COMMERS------------------------------------------------------------------------------------
+
+
+@api.route('/admin/dashboard', methods=['GET'])  # Define una ruta de la API en Flask para la URL '/admin/dashboard' y especifica que solo acepta métodos GET.
+@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+def get_dashboard_statistics():  # Define la función que maneja la lógica de esta ruta.
+    try:  # Intenta ejecutar el siguiente bloque de código.
+        # Calcula el total de ventas sumando todos los montos en la tabla EcommercePayment.
+        total_sales = db.session.query(func.sum(EcommercePayment.amount)).scalar() or 0
+
+        # Obtiene los 5 productos más vendidos:
+        # 1. Selecciona el nombre del producto y la cantidad total vendida.
+        # 2. Realiza una unión con la tabla OrderDetail para relacionar productos y detalles de pedidos.
+        # 3. Agrupa por nombre de producto.
+        # 4. Ordena los resultados por la cantidad total vendida en orden descendente.
+        # 5. Limita los resultados a los 5 productos más vendidos.
+        top_products = db.session.query(
+            Product.name, func.sum(OrderDetail.quantity).label('total_sold')
+        ).join(OrderDetail).group_by(Product.name).order_by(func.sum(OrderDetail.quantity).desc()).limit(5).all()
+
+        # Obtiene los niveles de stock de todos los productos:
+        # 1. Selecciona el nombre del producto y su nivel de stock.
+        # 2. Ordena los resultados por nivel de stock en orden ascendente.
+        stock_levels = db.session.query(Product.name, Product.stock).order_by(Product.stock).all()
+
+        # Crea una respuesta en formato JSON con las estadísticas:
+        # 1. 'total_sales': total de ventas.
+        # 2. 'top_products': lista de los 5 productos más vendidos con su nombre y cantidad total vendida.
+        # 3. 'stock_levels': lista de productos con su nombre y nivel de stock.
+        response = {
+            'total_sales': total_sales,
+            'top_products': [{'name': prod.name, 'total_sold': prod.total_sold} for prod in top_products],
+            'stock_levels': [{'name': prod.name, 'stock': prod.stock} for prod in stock_levels]
+        }
+
+        # Devuelve la respuesta en formato JSON con un código de estado HTTP 200 (OK).
+        return jsonify(response), 200
+
+    except Exception as e:  # Si ocurre alguna excepción en el bloque try, se captura aquí.
+        # Devuelve una respuesta en formato JSON con el mensaje de error y un código de estado HTTP 500 (Internal Server Error).
+        return jsonify({'error': str(e)}), 500
+
+#-------------------------------------------------ENPOINT PARA EL E-COMMERS------------------------------------------------------------------------------------
+
+@api.route('/admin/products', methods=['GET'])  # Define una ruta de la API para '/admin/products' que acepta métodos GET.
+@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+def get_all_products():  # Define la función que maneja la lógica de esta ruta.
+    try:  # Intenta ejecutar el siguiente bloque de código.
+        products = Product.query.all()  # Consulta todos los productos en la base de datos.
+        if not products:  # Verifica si no hay productos.
+            return jsonify({'message': 'No products found'}), 404  # Si no hay productos, devuelve un mensaje y un código de estado 404 (No encontrado).
+
+        # Serializa cada producto en una lista de diccionarios.
+        response_body = [product.serialize() for product in products]
+        # Devuelve la lista de productos en formato JSON con un código de estado 200 (OK).
+        return jsonify(response_body), 200
+
+    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
+        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+
+
+#-------------------------------------------------Gestión de Productos------------------------------------------------------------------------------------
+
+@api.route('/admin/products', methods=['POST'])  # Define una ruta de la API para '/admin/products' que acepta métodos POST.
+@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+def create_product():  # Define la función que maneja la lógica de esta ruta.
+    try:  # Intenta ejecutar el siguiente bloque de código.
+        data = request.get_json()  # Obtiene los datos en formato JSON del cuerpo de la solicitud.
+        if not data:  # Verifica si no se proporcionaron datos.
+            return jsonify({'error': 'No data provided'}), 400  # Si no se proporcionaron datos, devuelve un mensaje de error y un código de estado 400 (Bad Request).
+
+        # Crea un nuevo producto utilizando los datos proporcionados.
+        new_product = Product(
+            name=data.get('name'),
+            description=data.get('description'),
+            price=data.get('price'),
+            stock=data.get('stock'),
+            category_id=data.get('category_id'),
+            is_active=data.get('is_active', True)  # El valor predeterminado de 'is_active' es True.
+        )
+
+        db.session.add(new_product)  # Añade el nuevo producto a la sesión de la base de datos.
+        db.session.commit()  # Confirma la transacción en la base de datos.
+        return jsonify({'message': 'Product created successfully'}), 201  # Devuelve un mensaje de éxito y un código de estado 201 (Created).
+
+    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
+        db.session.rollback()  # Revierte la transacción en caso de error.
+        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+
+@api.route('/admin/products/<int:product_id>', methods=['PUT'])  # Define una ruta de la API para '/admin/products/<product_id>' que acepta métodos PUT.
+@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+def update_product(product_id):  # Define la función que maneja la lógica de esta ruta.
+    try:  # Intenta ejecutar el siguiente bloque de código.
+        data = request.get_json()  # Obtiene los datos en formato JSON del cuerpo de la solicitud.
+        if not data:  # Verifica si no se proporcionaron datos.
+            return jsonify({'error': 'No data provided'}), 400  # Si no se proporcionaron datos, devuelve un mensaje de error y un código de estado 400 (Bad Request).
+
+        product = Product.query.get(product_id)  # Busca el producto por su ID.
+        if not product:  # Verifica si el producto no existe.
+            return jsonify({'error': 'Product not found'}), 404  # Si el producto no existe, devuelve un mensaje de error y un código de estado 404 (No encontrado).
+
+        # Actualiza los atributos del producto con los datos proporcionados.
+        for key, value in data.items():
+            if hasattr(product, key):  # Verifica si el producto tiene el atributo especificado.
+                setattr(product, key, value)  # Establece el valor del atributo.
+
+        db.session.commit()  # Confirma la transacción en la base de datos.
+        return jsonify({'message': 'Product updated successfully'}), 200  # Devuelve un mensaje de éxito y un código de estado 200 (OK).
+
+    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
+        db.session.rollback()  # Revierte la transacción en caso de error.
+        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+
+@api.route('/admin/products/<int:product_id>', methods=['DELETE'])  # Define una ruta de la API para '/admin/products/<product_id>' que acepta métodos DELETE.
+@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+def delete_product(product_id):  # Define la función que maneja la lógica de esta ruta.
+    try:  # Intenta ejecutar el siguiente bloque de código.
+        product = Product.query.get(product_id)  # Busca el producto por su ID.
+        if not product:  # Verifica si el producto no existe.
+            return jsonify({'error': 'Product not found'}), 404  # Si el producto no existe, devuelve un mensaje de error y un código de estado 404 (No encontrado).
+
+        db.session.delete(product)  # Elimina el producto de la sesión de la base de datos.
+        db.session.commit()  # Confirma la transacción en la base de datos.
+        return jsonify({'message': 'Product deleted successfully'}), 200  # Devuelve un mensaje de éxito y un código de estado 200 (OK).
+
+    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
+        db.session.rollback()  # Revierte la transacción en caso de error.
+        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
