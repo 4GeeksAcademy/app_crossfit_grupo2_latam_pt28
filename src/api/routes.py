@@ -1943,8 +1943,8 @@ def handle_contact_form():
 
 
 @api.route('/admin/dashboard', methods=['GET'])  # Define una ruta de la API en Flask para la URL '/admin/dashboard' y especifica que solo acepta métodos GET.
-@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+# @jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+# @require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
 def get_dashboard_statistics():  # Define la función que maneja la lógica de esta ruta.
     try:  # Intenta ejecutar el siguiente bloque de código.
         # Calcula el total de ventas sumando todos los montos en la tabla EcommercePayment.
@@ -1982,11 +1982,11 @@ def get_dashboard_statistics():  # Define la función que maneja la lógica de e
         # Devuelve una respuesta en formato JSON con el mensaje de error y un código de estado HTTP 500 (Internal Server Error).
         return jsonify({'error': str(e)}), 500
 
-#-------------------------------------------------ENPOINT PARA EL E-COMMERS------------------------------------------------------------------------------------
+#-------------------------------------------------Gestión de Productos------------------------------------------------------------------------------------
 
 @api.route('/admin/products', methods=['GET'])  # Define una ruta de la API para '/admin/products' que acepta métodos GET.
-@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+# @jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+# @require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
 def get_all_products():  # Define la función que maneja la lógica de esta ruta.
     try:  # Intenta ejecutar el siguiente bloque de código.
         products = Product.query.all()  # Consulta todos los productos en la base de datos.
@@ -2002,11 +2002,9 @@ def get_all_products():  # Define la función que maneja la lógica de esta ruta
         return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
 
 
-#-------------------------------------------------Gestión de Productos------------------------------------------------------------------------------------
-
 @api.route('/admin/products', methods=['POST'])  # Define una ruta de la API para '/admin/products' que acepta métodos POST.
-@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
+# @jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
+# @require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
 def create_product():  # Define la función que maneja la lógica de esta ruta.
     try:  # Intenta ejecutar el siguiente bloque de código.
         data = request.get_json()  # Obtiene los datos en formato JSON del cuerpo de la solicitud.
@@ -2019,7 +2017,7 @@ def create_product():  # Define la función que maneja la lógica de esta ruta.
             description=data.get('description'),
             price=data.get('price'),
             stock=data.get('stock'),
-            category_id=data.get('category_id'),
+            # category_id=data.get('category_id'),
             is_active=data.get('is_active', True)  # El valor predeterminado de 'is_active' es True.
         )
 

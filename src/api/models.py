@@ -480,11 +480,34 @@ class Product(db.Model):
     category = db.relationship('Category', backref='products')
     images = db.relationship('ProductImage', backref='product', lazy='dynamic')
 
+    def __repr__(self):
+        return '<Product %r>' % self.id
+
+    def serialize(self):
+        return {
+            "product_id": self.id,
+            "product_name": self.name,
+            "product_description": self.description,
+            "product_price": self.price,
+            "product_stock": self.stock,
+            "product_category": self.category.name if self.category else "N/A",
+        }
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        return '<Category %r>' % self.id
+
+    def serialize(self):
+        return {
+            "category_id": self.id,
+            "category_name": self.name,
+            "category_description": self.description
+        }
 
 
 class ProductImage(db.Model):
@@ -495,6 +518,15 @@ class ProductImage(db.Model):
     def image_url(self):
         return f"data:image/jpeg;base64,{base64.b64encode(self.image_data).decode('utf-8')}"
 
+    def __repr__(self):
+        return '<ProductImage %r>' % self.id
+
+    def serialize(self):
+        return {
+            "image_id": self.id,
+            "product_id": self.product_id,
+            "image_url": self.image_url(),
+        }
 
 
 class CartItem(db.Model):
@@ -505,6 +537,18 @@ class CartItem(db.Model):
 
     user = db.relationship('User', backref='cart_items')
     product = db.relationship('Product', backref='cart_items')
+
+    def __repr__(self):
+        return '<CartItem %r>' % self.id
+
+    def serialize(self):
+        return {
+            "cart_item_id": self.id,
+            "user_id": self.user_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "product": self.product.serialize()
+        }
 
 
 class Order(db.Model):
@@ -518,8 +562,25 @@ class Order(db.Model):
     shipping_address = db.Column(db.String(255), nullable=True)  # Nullable si es retiro en tienda
     estimated_delivery_date = db.Column(db.DateTime, nullable=True)  # Fecha estimada de entrega, si aplica
 
-
     user = db.relationship('User', backref='orders')
+
+    def __repr__(self):
+        return '<Order %r>' % self.id
+
+    def serialize(self):
+        return {
+            "order_id": self.id,
+            "user_id": self.user_id,
+            "session_id": self.session_id,
+            "order_date": self.order_date.isoformat(),
+            "total": self.total,
+            "status": self.status,
+            "shipping_type": self.shipping_type,
+            "shipping_address": self.shipping_address,
+            "estimated_delivery_date": self.estimated_delivery_date.isoformat() if self.estimated_delivery_date else None,
+            "user": self.user.serialize() if self.user else None,
+            "order_details": [detail.serialize() for detail in self.order_details]
+        }
 
 
 class OrderDetail(db.Model):
@@ -531,6 +592,19 @@ class OrderDetail(db.Model):
 
     order = db.relationship('Order', backref='order_details')
     product = db.relationship('Product', backref='order_details')
+
+    def __repr__(self):
+        return '<OrderDetail %r>' % self.id
+
+    def serialize(self):
+        return {
+            "order_detail_id": self.id,
+            "order_id": self.order_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "price": self.price,
+            "product": self.product.serialize()
+        }
 
 
 class EcommercePayment(db.Model):
@@ -546,12 +620,28 @@ class EcommercePayment(db.Model):
     shipping_address = db.Column(db.String(255), nullable=True)  # Nullable si es retiro en tienda
     estimated_delivery_date = db.Column(db.DateTime, nullable=True)  # Fecha estimada de entrega, si aplica
 
-
     user = db.relationship('User', backref='ecommerce_payments')
     order = db.relationship('Order', backref='ecommerce_payments')
 
     def __repr__(self):
         return '<EcommercePayment %r>' % self.id
+
+    def serialize(self):
+        return {
+            "payment_id": self.id,
+            "user_id": self.user_id,
+            "order_id": self.order_id,
+            "payment_date": self.payment_date.isoformat(),
+            "amount": self.amount,
+            "payment_method": self.payment_method,
+            "status": self.status,
+            "transaction_reference": self.transaction_reference,
+            "shipping_type": self.shipping_type,
+            "shipping_address": self.shipping_address,
+            "estimated_delivery_date": self.estimated_delivery_date.isoformat() if self.estimated_delivery_date else None,
+            "user": self.user.serialize() if self.user else None,
+            "order": self.order.serialize()
+        }
 
 
 class EcommercePaymentDetail(db.Model):
@@ -567,3 +657,14 @@ class EcommercePaymentDetail(db.Model):
 
     def __repr__(self):
         return '<EcommercePaymentDetail %r>' % self.id
+
+    def serialize(self):
+        return {
+            "payment_detail_id": self.id,
+            "payment_id": self.payment_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "price": self.price,
+            "subtotal": self.subtotal,
+            "product": self.product.serialize()
+        }
