@@ -15,17 +15,18 @@ db = SQLAlchemy()
 # Tabla de Usuarios
 class User(db.Model):  # Define una clase que representa la tabla de usuarios en la base de datos
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(250), unique=False, nullable=False)  # Columna para la contraseña no nula
-    is_active = db.Column(db.Boolean(), unique=False, nullable=True)  # Columna para el estado de activación del usuario
-    name = db.Column(db.String(80), nullable=False)  # Columna para el nombre del usuario
-    last_name = db.Column(db.String(80), nullable=False)  # Columna para el nombre del usuario
-    username = db.Column(db.String(80), nullable=False)  # Columna para el nombre del usuario
-    registration_date = db.Column(db.DateTime, default=datetime.utcnow)  # Columna para la fecha de registro del usuario
-    last_update_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Nueva columna para la fecha de última modificación
-    image_url = db.Column(db.String(255), nullable=True)  # Almacena la ruta de la imagen
+    email = db.Column(db.String(120), unique=True, nullable=True)  # Nullable para permitir usuarios invitados
+    password = db.Column(db.String(250), nullable=True)  # Nullable para permitir usuarios invitados
+    is_active = db.Column(db.Boolean(), default=True)
+    is_guest = db.Column(db.Boolean(), default=False, nullable=True)  # Indica si el usuario es un invitado
+    name = db.Column(db.String(80), nullable=True)  # Nullable para permitir usuarios invitados
+    last_name = db.Column(db.String(80), nullable=True)  # Nullable para permitir usuarios invitados
+    username = db.Column(db.String(80), nullable=True)  # Nullable para permitir usuarios invitados
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    last_update_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    image_url = db.Column(db.String(255), nullable=True)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id', ondelete='SET NULL'), nullable=True)
-    profile_image_id = db.Column(db.Integer, db.ForeignKey('profile_image.id'), nullable=True)  # Clave foránea para la imagen de perfil
+    profile_image_id = db.Column(db.Integer, db.ForeignKey('profile_image.id'), nullable=True)
 
 
     # Relación con SecurityQuestion configurada para eliminar en cascada
@@ -463,3 +464,106 @@ class MessageRecipient(db.Model):
 
     def __repr__(self):
         return '<MessageRecipient %r>' % (self.message_id, self.recipient_id)
+
+
+
+#-----------------------------------------------------------------TABLAS PARA EL E-COMMERS--------------------------------------------
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    stock = db.Column(db.Integer, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    is_active = db.Column(db.Boolean, default=True)
+
+    category = db.relationship('Category', backref='products')
+    images = db.relationship('ProductImage', backref='product', lazy='dynamic')
+
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+
+class ProductImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    image_data = db.Column(LargeBinary, nullable=False)
+    
+    def image_url(self):
+        return f"data:image/jpeg;base64,{base64.b64encode(self.image_data).decode('utf-8')}"
+
+
+
+class CartItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+
+    user = db.relationship('User', backref='cart_items')
+    product = db.relationship('Product', backref='cart_items')
+
+
+class Order(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    session_id = db.Column(db.String(255), nullable=True)  # Para invitados
+    order_date = db.Column(db.DateTime, default=datetime.utcnow)
+    total = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(50), default='Pending')
+    shipping_type = db.Column(db.String(50), nullable=False)  # Ej: 'Standard', 'Express', 'In-store pickup'
+    shipping_address = db.Column(db.String(255), nullable=True)  # Nullable si es retiro en tienda
+    estimated_delivery_date = db.Column(db.DateTime, nullable=True)  # Fecha estimada de entrega, si aplica
+
+
+    user = db.relationship('User', backref='orders')
+
+
+class OrderDetail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+    order = db.relationship('Order', backref='order_details')
+    product = db.relationship('Product', backref='order_details')
+
+
+class EcommercePayment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Null si es un invitado
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)  # Relacionado con una orden específica
+    payment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    amount = db.Column(db.Float, nullable=False)
+    payment_method = db.Column(db.String(50), nullable=False)  # Ej: 'Credit Card', 'PayPal'
+    status = db.Column(db.String(50), nullable=False)  # Ej: 'Completed', 'Pending', 'Failed'
+    transaction_reference = db.Column(db.String(255), nullable=True)  # Referencia de la transacción en el sistema de pagos
+    shipping_type = db.Column(db.String(50), nullable=False)  # Ej: 'Standard', 'Express', 'In-store pickup'
+    shipping_address = db.Column(db.String(255), nullable=True)  # Nullable si es retiro en tienda
+    estimated_delivery_date = db.Column(db.DateTime, nullable=True)  # Fecha estimada de entrega, si aplica
+
+
+    user = db.relationship('User', backref='ecommerce_payments')
+    order = db.relationship('Order', backref='ecommerce_payments')
+
+    def __repr__(self):
+        return '<EcommercePayment %r>' % self.id
+
+
+class EcommercePaymentDetail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    payment_id = db.Column(db.Integer, db.ForeignKey('ecommerce_payment.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Float, nullable=False)  # Precio por unidad al momento de la compra
+    subtotal = db.Column(db.Float, nullable=False)  # Calculado como price * quantity
+
+    payment = db.relationship('EcommercePayment', backref='details')
+    product = db.relationship('Product', backref='payment_details')
+
+    def __repr__(self):
+        return '<EcommercePaymentDetail %r>' % self.id

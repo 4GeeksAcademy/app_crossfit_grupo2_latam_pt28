@@ -19,6 +19,12 @@ psql -h localhost postgres -U gym_db -c 'CREATE EXTENSION unaccent;' || true &&
 pipenv run migrate &&
 pipenv run upgrade
 
+LUEGO DE BORRAR LA BASE DE DATOS CORRE EL ENTORNO VIRTUAL:
+pipenv shell
+
+SI DA ERROR VERIFICA SI TIENES pipenv install flask-migrate INSTALADO. SI NO, INSTALALO.
+
+
 """
 
 

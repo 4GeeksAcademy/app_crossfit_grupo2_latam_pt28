@@ -23,12 +23,13 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
-    email = Column(String(120), unique=True, nullable=False)
-    password = Column(String(250), nullable=False)
-    is_active = Column(Boolean, nullable=True)
-    name = Column(String(80), nullable=False)
-    last_name = Column(String(80), nullable=False)
-    username = Column(String(80), nullable=False)
+    email = Column(String(120), unique=True, nullable=True)
+    password = Column(String(250), nullable=True)
+    is_active = Column(Boolean(), default=True)
+    is_guest = Column(Boolean(), default=False, nullable=True)
+    name = Column(String(80), nullable=True)
+    last_name = Column(String(80), nullable=True)
+    username = Column(String(80), nullable=True)
     registration_date = Column(DateTime, default=datetime.utcnow)
     last_update_date = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     image_url = Column(String(255), nullable=True)
@@ -52,6 +53,7 @@ class SecurityQuestion(Base):
     question = Column(String(255), nullable=False)
     answer = Column(String(255), nullable=False)
     user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    
     user = relationship("User", back_populates="security_questions")
 
     def __repr__(self):
@@ -62,6 +64,7 @@ class Role(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     description = Column(String(255), nullable=False)
+    
     role_permissions = relationship("RolePermission", back_populates="role")
 
     def __repr__(self):
@@ -72,6 +75,7 @@ class RolePermission(Base):
     id = Column(Integer, primary_key=True)
     role_id = Column(Integer, ForeignKey('role.id'), nullable=False)
     permission_id = Column(Integer, ForeignKey('permission.id'), nullable=False)
+    
     role = relationship("Role", back_populates="role_permissions")
     permission = relationship("Permission", back_populates="role_permissions")
 
@@ -83,6 +87,7 @@ class Permission(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     description = Column(String(255), nullable=True)
+    
     role_permissions = relationship("RolePermission", back_populates="permission")
 
     def __repr__(self):
@@ -96,6 +101,7 @@ class Membership(Base):
     price = Column(Float, nullable=False)
     duration_days = Column(Integer, nullable=True)
     classes_per_month = Column(Integer, nullable=True)
+    
     membership_history = relationship('UserMembershipHistory', back_populates='membership')
     payments = relationship('Payment', back_populates='membership')
 
@@ -111,6 +117,7 @@ class UserMembershipHistory(Base):
     end_date = Column(DateTime)
     remaining_classes = Column(Integer)
     is_active = Column(Boolean, default=False)
+    
     user = relationship("User", back_populates="memberships_history")
     membership = relationship("Membership", back_populates="membership_history")
 
@@ -129,6 +136,7 @@ class Training_classes(Base):
     duration_minutes = Column(Integer, nullable=False)
     available_slots = Column(Integer, nullable=False)
     instructor_id = Column(Integer, ForeignKey('user.id'), nullable=True)
+    
     bookings = relationship('Booking', back_populates='training_class')
 
     def __repr__(self):
@@ -141,6 +149,7 @@ class Booking(Base):
     training_class_id = Column(Integer, ForeignKey('training_classes.id'), nullable=False)
     booking_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     status = Column(String(50), nullable=True, default='avaible')
+    
     training_class = relationship("Training_classes", back_populates="bookings")
 
     def __repr__(self):
@@ -162,6 +171,7 @@ class Payment(Base):
     card_number_last4 = Column(String(4))
     card_type = Column(String(255))
     cardholder_name = Column(String(255))
+    
     payment_details = relationship('PaymentDetail', back_populates='payment')
 
     def __repr__(self):
@@ -196,6 +206,7 @@ class ProfileImage(Base):
     __tablename__ = 'profile_image'
     id = Column(Integer, primary_key=True)
     img_data = Column(LargeBinary, nullable=False)
+    
     user = relationship('User', back_populates='profile_image', uselist=False)
 
     def __repr__(self):
@@ -223,6 +234,7 @@ class MessagesSend(Base):
     title = Column(String(255), nullable=True)
     body = Column(String(255), nullable=False)
     send_time = Column(DateTime, default=datetime.utcnow)
+    
     sender = relationship("User", foreign_keys=[sender_id], backref="sent_messages")
 
     def __repr__(self):
@@ -233,11 +245,108 @@ class MessageRecipient(Base):
     message_id = Column(Integer, ForeignKey('messages_send.id'), primary_key=True)
     recipient_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     read = Column(Boolean, default=False)
+    
     message = relationship("MessagesSend", backref="message_recipients")
     recipient = relationship("User", foreign_keys=[recipient_id], backref="recipient_entries")
 
     def __repr__(self):
         return '<MessageRecipient %r>' % (self.message_id, self.recipient_id)
+
+class Product(Base):
+    __tablename__ = 'product'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(String(255), nullable=True)
+    price = Column(Float, nullable=False)
+    stock = Column(Integer, nullable=False)
+    category_id = Column(Integer, ForeignKey('category.id'))
+    is_active = Column(Boolean, default=True)
+    
+    category = relationship('Category', backref='products')
+    images = relationship('ProductImage', backref='product', lazy='dynamic')
+
+class Category(Base):
+    __tablename__ = 'category'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(String(255), nullable=True)
+
+class ProductImage(Base):
+    __tablename__ = 'product_image'
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    image_data = Column(LargeBinary, nullable=False)
+
+class CartItem(Base):
+    __tablename__ = 'cart_item'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    quantity = Column(Integer, default=1)
+    
+    user = relationship('User', backref='cart_items')
+    product = relationship('Product', backref='cart_items')
+
+class Order(Base):
+    __tablename__ = 'order'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=True)
+    session_id = Column(String(255), nullable=True)
+    order_date = Column(DateTime, default=datetime.utcnow)
+    total = Column(Float, nullable=False)
+    status = Column(String(50), default='Pending')
+    shipping_type = Column(String(50), nullable=False) 
+    shipping_address = Column(String(255), nullable=True)  
+    estimated_delivery_date = Column(DateTime, nullable=True) 
+
+    user = relationship('User', backref='orders')
+
+class OrderDetail(Base):
+    __tablename__ = 'order_detail'
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey('order.id'), nullable=False)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+
+    order = relationship('Order', backref='order_details')
+    product = relationship('Product', backref='order_details')
+
+
+class EcommercePayment(Base):
+    __tablename__ = 'ecommerce_payment'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'), nullable=True)
+    order_id = Column(Integer, ForeignKey('order.id'), nullable=False)
+    payment_date = Column(DateTime, default=datetime.utcnow)
+    amount = Column(Float, nullable=False)
+    payment_method = Column(String(50), nullable=False)
+    status = Column(String(50), nullable=False)
+    transaction_reference = Column(String(255), nullable=True)
+    shipping_type = Column(String(50), nullable=False) 
+    shipping_address = Column(String(255), nullable=True)  
+    estimated_delivery_date = Column(DateTime, nullable=True) 
+
+    user = relationship('User', backref='ecommerce_payments')
+    order = relationship('Order', backref='ecommerce_payments')
+
+    def __repr__(self):
+        return '<EcommercePayment %r>' % self.id
+
+class EcommercePaymentDetail(Base):
+    __tablename__ = 'ecommerce_payment_detail'
+    id = Column(Integer, primary_key=True)
+    payment_id = Column(Integer, ForeignKey('ecommerce_payment.id'), nullable=False)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+    subtotal = Column(Float, nullable=False)
+    
+    payment = relationship('EcommercePayment', backref='details')
+    product = relationship('Product', backref='payment_details')
+
+    def __repr__(self):
+        return '<EcommercePaymentDetail %r>' % self.id
 
 # Generate the diagram
 try:
