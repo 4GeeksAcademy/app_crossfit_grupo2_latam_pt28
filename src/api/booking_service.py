@@ -9,6 +9,8 @@ import base64
 from flask_jwt_extended import get_jwt_identity
 from functools import wraps
 from flask import jsonify
+from PIL import Image
+import io
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -367,3 +369,24 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def optimize_image(file_stream):
+    """
+    Reduce el tamaño y la calidad de la imagen para optimización web.
+    """
+    # Carga la imagen desde el archivo subido
+    image = Image.open(file_stream)
+    
+    # Convertir a RGB si es necesario (por ejemplo, si es un archivo PNG con transparencia)
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+    
+    # Redimensionar la imagen manteniendo el aspecto
+    max_size = (800, 800)  # Puedes ajustar esto a lo que mejor se adapte a tus necesidades
+    image.thumbnail(max_size, Image.ANTIALIAS)
+    
+    # Guardar la imagen optimizada en un objeto de tipo bytes
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG', quality=85)  # Ajusta la calidad al 85%
+    img_byte_arr = img_byte_arr.getvalue()
+    
+    return img_byte_arr

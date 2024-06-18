@@ -18,13 +18,15 @@ import base64
 import paypalrestsdk
 import re #biblioteca estándar de Python para trabajar con expresiones regulares
 from sqlalchemy import func, create_engine
+from sqlalchemy.exc import SQLAlchemyError
+
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
 
 
 
-from .booking_service import require_role, create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email, cancel_class_and_update_bookings, allowed_file, send_class_booking_email, send_class_cancellation_email
+from .booking_service import require_role, create_booking, cancel_booking, process_payment, create_transaction, activate_membership, generate_confirmation_token_email, confirm_token_email, send_email, cancel_class_and_update_bookings, allowed_file, send_class_booking_email, send_class_cancellation_email, optimize_image
 
 
 #------------------verificar con david --------------------------------
@@ -1998,28 +2000,38 @@ def create_product():
         return jsonify({'error': 'No data provided'}), 400
 
     name = data.get('name')
-    description = data.get('description')
-    price = data.get('price')
-    stock = data.get('stock')
+    description = data.get('description', '')
+    price = data.get('price', 0.0)
+    stock = data.get('stock', 0)
     subcategory_id = data.get('subcategory_id')
     is_active = data.get('is_active', True)
 
-    if not all([name, price, stock, subcategory_id]):
-        return jsonify({'error': 'Missing data'}), 400
+    # Validación de tipo y formato
+    if not isinstance(name, str) or not name.strip():
+        return jsonify({'error': 'Invalid name'}), 400
+    if not isinstance(price, (int, float)) or price < 0:
+        return jsonify({'error': 'Invalid price'}), 400
+    if not isinstance(stock, int) or stock < 0:
+        return jsonify({'error': 'Invalid stock'}), 400
+    if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
+        return jsonify({'error': 'Invalid subcategory ID'}), 400
 
-    new_product = Product(
-        name=name,
-        description=description,
-        price=price,
-        stock=stock,
-        subcategory_id=subcategory_id,
-        is_active=is_active
-    )
-    db.session.add(new_product)
-    db.session.commit()
+    try:
+        new_product = Product(
+            name=name.strip(),
+            description=description,
+            price=price,
+            stock=stock,
+            subcategory_id=subcategory_id,
+            is_active=is_active
+        )
+        db.session.add(new_product)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
     return jsonify({'message': 'Product created successfully', 'product': new_product.id}), 201
-
 
 
 """
@@ -2029,16 +2041,37 @@ Actualizar Producto
 @jwt_required()
 def update_product(product_id):
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
     product = Product.query.get(product_id)
     if not product:
         return jsonify({'error': 'Product not found'}), 404
 
-    for key, value in data.items():
-        if hasattr(product, key):
-            setattr(product, key, value)
+    name = data.get('name')
+    price = data.get('price')
+    stock = data.get('stock')
 
-    db.session.commit()
-    return jsonify({'message': 'Product updated successfully'}), 200
+    if name and not isinstance(name, str):
+        return jsonify({'error': 'Invalid name'}), 400
+    if price is not None and (not isinstance(price, (int, float)) or price < 0):
+        return jsonify({'error': 'Invalid price'}), 400
+    if stock is not None and (not isinstance(stock, int) or stock < 0):
+        return jsonify({'error': 'Invalid stock'}), 400
+
+    try:
+        if name:
+            product.name = name.strip()
+        if price is not None:
+            product.price = price
+        if stock is not None:
+            product.stock = stock
+        db.session.commit()
+        return jsonify({'message': 'Product updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 
 """
@@ -2062,9 +2095,36 @@ Obtener Productos
 @api.route('/products', methods=['GET'])
 @jwt_required()
 def get_products():
-    products = Product.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    products = Product.query.paginate(page=page, per_page=per_page, error_out=False)
+    response = {
+        'products': [product.serialize() for product in products.items],
+        'total': products.total,
+        'pages': products.pages,
+        'current_page': products.page
+    }
+    return jsonify(response), 200
+
+"""
+busqueda de Productos
+"""
+@api.route('/products/search', methods=['GET'])
+@jwt_required()
+def search_products():
+    query = request.args.get('query', '')
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    products = Product.query.filter(Product.name.ilike(f'%{query}%'))
+    if min_price is not None:
+        products = products.filter(Product.price >= min_price)
+    if max_price is not None:
+        products = products.filter(Product.price <= max_price)
+    products = products.all()
     response = [product.serialize() for product in products]
     return jsonify(response), 200
+
+
 
 #-------------------------------------------------Gestión de categorias------------------------------------------------------------------------------------
 
@@ -2081,14 +2141,22 @@ def create_category():
     name = data.get('name')
     description = data.get('description')
 
-    if not name:
-        return jsonify({'error': 'Name is required'}), 400
+    if not isinstance(name, str) or not name.strip():
+        return jsonify({'error': 'Invalid name'}), 400
 
-    new_category = Category(name=name, description=description)
-    db.session.add(new_category)
-    db.session.commit()
+    try:
+        new_category = Category(
+            name=name.strip(),
+            description=description.strip() if description else None
+        )
+        db.session.add(new_category)
+        db.session.commit()
+        return jsonify({'message': 'Category created successfully', 'category': new_category.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
-    return jsonify({'message': 'Category created successfully', 'category': new_category.id}), 201
+
 
 """
 Actualizar Categoría
@@ -2249,34 +2317,40 @@ def create_order():
     if not items or not shipping_type:
         return jsonify({'error': 'Missing items or shipping type'}), 400
 
-    total = sum(item['price'] * item['quantity'] for item in items)
-
-    new_order = Order(
-        user_id=user_id,
-        total=total,
-        shipping_type=shipping_type,
-        shipping_address=shipping_address
-    )
-    db.session.add(new_order)
-    db.session.flush()  # Get the order ID before commit
-
-    for item in items:
-        product = Product.query.get(item['product_id'])
-        if not product or product.stock < item['quantity']:
-            db.session.rollback()
-            return jsonify({'error': 'Product not found or insufficient stock'}), 400
-
-        product.stock -= item['quantity']
-        order_detail = OrderDetail(
-            order_id=new_order.id,
-            product_id=item['product_id'],
-            quantity=item['quantity'],
-            price=item['price']
+    try:
+        total = sum(item['price'] * item['quantity'] for item in items)
+        new_order = Order(
+            user_id=user_id,
+            total=total,
+            shipping_type=shipping_type,
+            shipping_address=shipping_address
         )
-        db.session.add(order_detail)
+        db.session.add(new_order)
+        db.session.flush()  # Get the order ID before commit
 
-    db.session.commit()
-    return jsonify({'message': 'Order created successfully', 'order': new_order.id}), 201
+        for item in items:
+            product = Product.query.get(item['product_id'])
+            if not product or product.stock < item['quantity']:
+                db.session.rollback()
+                return jsonify({'error': 'Product not found or insufficient stock'}), 400
+
+            product.stock -= item['quantity']
+            order_detail = OrderDetail(
+                order_id=new_order.id,
+                product_id=item['product_id'],
+                quantity=item['quantity'],
+                price=item['price']
+            )
+            db.session.add(order_detail)
+
+        db.session.commit()
+        return jsonify({'message': 'Order created successfully', 'order': new_order.id}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Unexpected error: ' + str(e)}), 500
 
 """
 Actualizar Estado del Pedido
@@ -2382,18 +2456,25 @@ def create_promotion():
     if not all([name, discount_percentage, start_date, end_date]):
         return jsonify({'error': 'Missing data'}), 400
 
-    new_promotion = Promotion(
-        name=name,
-        description=description,
-        discount_percentage=discount_percentage,
-        start_date=start_date,
-        end_date=end_date,
-        is_active=is_active
-    )
-    db.session.add(new_promotion)
-    db.session.commit()
+    try:
+        new_promotion = Promotion(
+            name=name,
+            description=description,
+            discount_percentage=discount_percentage,
+            start_date=start_date,
+            end_date=end_date,
+            is_active=is_active
+        )
+        db.session.add(new_promotion)
+        db.session.commit()
+        return jsonify({'message': 'Promotion created successfully', 'promotion': new_promotion.id}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Unexpected error: ' + str(e)}), 500
 
-    return jsonify({'message': 'Promotion created successfully', 'promotion': new_promotion.id}), 201
 
 """
 Actualizar Promoción
@@ -2475,3 +2556,83 @@ def delete_product_promotion(product_promotion_id):
     db.session.delete(product_promotion)
     db.session.commit()
     return jsonify({'message': 'ProductPromotion deleted successfully'}), 200
+
+
+#-------------------------------------------------Gestión de imagen de produecto------------------------------------------------------------------------------------
+"""
+Carga de imagen producto
+"""
+@api.route('/upload_product_image/<int:product_id>', methods=['POST'])
+@jwt_required()
+def upload_product_image(product_id):
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        if file.filename == '' or not allowed_file(file.filename):
+            return jsonify({'error': 'No selected file or invalid file type'}), 400
+
+        product = Product.query.get(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+
+        # Optimizar la imagen
+        optimized_image_data = optimize_image(file)
+
+        # Aquí guardarías optimized_image_data en la base de datos
+        new_image = ProductImage(product_id=product.id, image_data=optimized_image_data)
+        db.session.add(new_image)
+        db.session.commit()
+        return jsonify({'message': 'Product image uploaded successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+"""
+actualizar imagen producto
+"""
+@api.route('/update_product_image/<int:image_id>', methods=['PUT'])
+@jwt_required()
+def update_product_image(image_id):
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        image = ProductImage.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+
+        if file and allowed_file(file.filename):
+            file_data = file.read()
+            image.image_data = file_data
+            db.session.commit()
+            return jsonify({'message': 'Product image updated successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+"""
+eliminar imagen producto
+"""
+@api.route('/delete_product_image/<int:image_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product_image(image_id):
+    try:
+        image = ProductImage.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+
+        db.session.delete(image)
+        db.session.commit()
+        return jsonify({'message': 'Product image deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

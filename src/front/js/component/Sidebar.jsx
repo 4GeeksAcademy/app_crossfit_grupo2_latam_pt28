@@ -125,6 +125,17 @@ const Sidebar = () => {
                 </Button>
             </span>
 
+            {store.uploadedUserData.role === 'master' ? (
+                <span className={`${styles.icon} ${collapsed ? '' : styles.hide}`}>
+                    <Button className={styles.ButtonHome}>
+                        <Link to="/EcommerAdminPage">
+                            <i class="fa-solid fa-store-slash"></i>
+                        </Link>
+                    </Button>
+                </span>
+
+            ) : null}
+
 
             <div className={styles.scrollableContent}>
                 <span className={`${styles.link} ${collapsed ? styles.hide : ''}`}>

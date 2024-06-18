@@ -1,0 +1,117 @@
+.formContainer {
+    padding: 20px;
+    background: var(--color-light);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: var(--color-dark);
+}
+
+.formContainer input,
+.formContainer select,
+.formContainer textarea {
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+.titleComponent {
+    color: var(--color-green);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.label {
+    color: var(--color-dark);
+}
+
+.input {
+    border: 1px solid var(--color-grey);
+    border-radius: 4px;
+}
+
+.button {
+    background-color: var(--color-green);
+    border: none;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.table {
+    margin-top: 20px;
+    width: 100%;
+    background-color: var(--color-light);
+}
+
+.tableRow {
+    background-color: var(--color-grey);
+}
+
+.editButton,
+.deleteButton {
+    margin-right: 5px;
+    margin-bottom: 5px;
+    width: 45%;
+    text-align: center;
+}
+
+.actionsContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.subcategoryList {
+    list-style-type: none;
+    padding: 0;
+}
+
+.subcategoryList li {
+    background: var(--color-grey);
+    padding: 5px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.editButton {
+    background-color: #6c757d;
+    border: none;
+    width: 100%;
+    margin-right: 5px;
+}
+
+.deleteButton {
+    background-color: var(--color-dark);
+    border: none;
+    width: 100%;
+}
+
+.removeButton {
+    background-color: var(--color-dark);
+    border: none;
+    width: auto;
+}
+
+.titleModal {
+    text-align: center;
+    color: var(--color-green);
+}
+
+@media (max-width: 768px) {
+
+    .button,
+    .editButton,
+    .deleteButton {
+        width: 100%;
+    }
+
+    .editButton,
+    .deleteButton {
+        margin-right: 0;
+    }
+
+    .subcategoryList li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

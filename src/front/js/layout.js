@@ -64,6 +64,7 @@ import ImageSlider from "./pages/ImageSlider.jsx"
 
 import Sidebar from "./component/Sidebar.jsx";
 
+import EcommerAdminPage from "./pages/EcommerAdminPage.jsx";
 
 //create your first component
 const Layout = () => {
@@ -120,6 +121,7 @@ const Layout = () => {
                         <Route element={<MembershipManager />} />
                         <Route element={<PricingPlans />} path="/PricingPlans" />
                         <Route element={<ImageSlider />} path="/ImageSlider" />
+                        <Route element={<EcommerAdminPage />} path="/EcommerAdminPage" />
 
 
                     </Routes>
