@@ -1,7 +1,7 @@
   
 import os
 from flask_admin import Admin
-from .models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient,Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail
+from .models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient,Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail, Promotion, ProductPromotion, SubCategory
 from flask_admin.contrib.sqla import ModelView
 
 def setup_admin(app):
@@ -35,6 +35,9 @@ def setup_admin(app):
     admin.add_view(ModelView(OrderDetail, db.session))
     admin.add_view(ModelView(EcommercePayment, db.session))
     admin.add_view(ModelView(EcommercePaymentDetail, db.session))
+    admin.add_view(ModelView(Promotion, db.session))
+    admin.add_view(ModelView(ProductPromotion, db.session))
+    admin.add_view(ModelView(SubCategory, db.session))
 
 
 

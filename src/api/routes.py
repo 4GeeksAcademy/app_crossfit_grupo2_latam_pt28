@@ -4,7 +4,7 @@ Este módulo se encarga de iniciar el servidor API, cargar la base de datos y ag
 
 import os
 from flask import Flask, request, jsonify, url_for, Blueprint, redirect, url_for, render_template, current_app  # Importación de Flask y funciones relacionadas
-from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient, Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail  # Importación de los modelos de la base de datos
+from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient, Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail, Promotion, ProductPromotion,SubCategory  # Importación de los modelos de la base de datos
 from api.utils import generate_sitemap, APIException  # Importación de funciones de utilidad y excepciones personalizadas
 from flask_cors import CORS  # Importación de CORS para permitir solicitudes desde otros dominios
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity  # Importación de JWT para autenticación y autorización basada en tokens
@@ -1939,6 +1939,10 @@ def handle_contact_form():
 
 
 
+
+
+
+
 #-------------------------------------------------ENPOINT PARA EL E-COMMERS------------------------------------------------------------------------------------
 
 
@@ -1983,90 +1987,491 @@ def get_dashboard_statistics():  # Define la función que maneja la lógica de e
         return jsonify({'error': str(e)}), 500
 
 #-------------------------------------------------Gestión de Productos------------------------------------------------------------------------------------
+"""
+Crear Producto
+"""
+@api.route('/products', methods=['POST'])
+@jwt_required()
+def create_product():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
 
-@api.route('/admin/products', methods=['GET'])  # Define una ruta de la API para '/admin/products' que acepta métodos GET.
-# @jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-# @require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
-def get_all_products():  # Define la función que maneja la lógica de esta ruta.
-    try:  # Intenta ejecutar el siguiente bloque de código.
-        products = Product.query.all()  # Consulta todos los productos en la base de datos.
-        if not products:  # Verifica si no hay productos.
-            return jsonify({'message': 'No products found'}), 404  # Si no hay productos, devuelve un mensaje y un código de estado 404 (No encontrado).
+    name = data.get('name')
+    description = data.get('description')
+    price = data.get('price')
+    stock = data.get('stock')
+    subcategory_id = data.get('subcategory_id')
+    is_active = data.get('is_active', True)
 
-        # Serializa cada producto en una lista de diccionarios.
-        response_body = [product.serialize() for product in products]
-        # Devuelve la lista de productos en formato JSON con un código de estado 200 (OK).
-        return jsonify(response_body), 200
+    if not all([name, price, stock, subcategory_id]):
+        return jsonify({'error': 'Missing data'}), 400
 
-    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
-        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+    new_product = Product(
+        name=name,
+        description=description,
+        price=price,
+        stock=stock,
+        subcategory_id=subcategory_id,
+        is_active=is_active
+    )
+    db.session.add(new_product)
+    db.session.commit()
+
+    return jsonify({'message': 'Product created successfully', 'product': new_product.id}), 201
 
 
-@api.route('/admin/products', methods=['POST'])  # Define una ruta de la API para '/admin/products' que acepta métodos POST.
-# @jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-# @require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
-def create_product():  # Define la función que maneja la lógica de esta ruta.
-    try:  # Intenta ejecutar el siguiente bloque de código.
-        data = request.get_json()  # Obtiene los datos en formato JSON del cuerpo de la solicitud.
-        if not data:  # Verifica si no se proporcionaron datos.
-            return jsonify({'error': 'No data provided'}), 400  # Si no se proporcionaron datos, devuelve un mensaje de error y un código de estado 400 (Bad Request).
 
-        # Crea un nuevo producto utilizando los datos proporcionados.
-        new_product = Product(
-            name=data.get('name'),
-            description=data.get('description'),
-            price=data.get('price'),
-            stock=data.get('stock'),
-            # category_id=data.get('category_id'),
-            is_active=data.get('is_active', True)  # El valor predeterminado de 'is_active' es True.
+"""
+Actualizar Producto
+"""
+@api.route('/products/<int:product_id>', methods=['PUT'])
+@jwt_required()
+def update_product(product_id):
+    data = request.get_json()
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    for key, value in data.items():
+        if hasattr(product, key):
+            setattr(product, key, value)
+
+    db.session.commit()
+    return jsonify({'message': 'Product updated successfully'}), 200
+
+
+"""
+Eliminar Producto
+"""
+
+@api.route('/products/<int:product_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product(product_id):
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    db.session.delete(product)
+    db.session.commit()
+    return jsonify({'message': 'Product deleted successfully'}), 200
+
+"""
+Obtener Productos
+"""
+@api.route('/products', methods=['GET'])
+@jwt_required()
+def get_products():
+    products = Product.query.all()
+    response = [product.serialize() for product in products]
+    return jsonify(response), 200
+
+#-------------------------------------------------Gestión de categorias------------------------------------------------------------------------------------
+
+"""
+Crear Categoría
+"""
+@api.route('/categories', methods=['POST'])
+@jwt_required()
+def create_category():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    name = data.get('name')
+    description = data.get('description')
+
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+
+    new_category = Category(name=name, description=description)
+    db.session.add(new_category)
+    db.session.commit()
+
+    return jsonify({'message': 'Category created successfully', 'category': new_category.id}), 201
+
+"""
+Actualizar Categoría
+"""
+@api.route('/categories/<int:category_id>', methods=['PUT'])
+@jwt_required()
+def update_category(category_id):
+    data = request.get_json()
+    category = Category.query.get(category_id)
+    if not category:
+        return jsonify({'error': 'Category not found'}), 404
+
+    for key, value in data.items():
+        if hasattr(category, key):
+            setattr(category, key, value)
+
+    db.session.commit()
+    return jsonify({'message': 'Category updated successfully'}), 200
+
+"""
+Eliminar Categoría
+"""
+@api.route('/categories/<int:category_id>', methods=['DELETE'])
+@jwt_required()
+def delete_category(category_id):
+    category = Category.query.get(category_id)
+    if not category:
+        return jsonify({'error': 'Category not found'}), 404
+
+    db.session.delete(category)
+    db.session.commit()
+    return jsonify({'message': 'Category deleted successfully'}), 200
+
+"""
+Obtener Categorías
+"""
+@api.route('/categories', methods=['GET'])
+@jwt_required()
+def get_categories():
+    categories = Category.query.all()
+    response = [category.serialize() for category in categories]
+    return jsonify(response), 200
+
+#-------------------------------------------------Gestión de sub-categorias------------------------------------------------------------------------------------
+
+"""
+Crear Sub-Categoría
+"""
+@api.route('/subcategories', methods=['POST'])
+@jwt_required()
+def create_subcategory():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    name = data.get('name')
+    description = data.get('description')
+    category_id = data.get('category_id')
+
+    if not all([name, category_id]):
+        return jsonify({'error': 'Missing data'}), 400
+
+    new_subcategory = SubCategory(
+        name=name,
+        description=description,
+        category_id=category_id
+    )
+    db.session.add(new_subcategory)
+    db.session.commit()
+
+    return jsonify({'message': 'SubCategory created successfully', 'subcategory': new_subcategory.id}), 201
+
+"""
+Actualizar Sub-Categoría
+"""
+
+@api.route('/subcategories/<int:subcategory_id>', methods=['PUT'])
+@jwt_required()
+def update_subcategory(subcategory_id):
+    data = request.get_json()
+    subcategory = SubCategory.query.get(subcategory_id)
+    if not subcategory:
+        return jsonify({'error': 'SubCategory not found'}), 404
+
+    for key, value in data.items():
+        if hasattr(subcategory, key):
+            setattr(subcategory, key, value)
+
+    db.session.commit()
+    return jsonify({'message': 'SubCategory updated successfully'}), 200
+
+"""
+eliminar Sub-Categoría
+"""
+
+@api.route('/subcategories/<int:subcategory_id>', methods=['DELETE'])
+@jwt_required()
+def delete_subcategory(subcategory_id):
+    subcategory = SubCategory.query.get(subcategory_id)
+    if not subcategory:
+        return jsonify({'error': 'SubCategory not found'}), 404
+
+    db.session.delete(subcategory)
+    db.session.commit()
+    return jsonify({'message': 'SubCategory deleted successfully'}), 200
+
+"""
+obtener Sub-Categoría
+"""
+
+@api.route('/subcategories', methods=['GET'])
+@jwt_required()
+def get_subcategories():
+    subcategories = SubCategory.query.all()
+    response = [subcategory.serialize() for subcategory in subcategories]
+    return jsonify(response), 200
+
+
+
+#-------------------------------------------------Gestión de inventarios------------------------------------------------------------------------------------
+"""
+Actualizar Inventario
+"""
+@api.route('/products/<int:product_id>/stock', methods=['PUT'])
+@jwt_required()
+def update_stock(product_id):
+    data = request.get_json()
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({'error': 'Product not found'}), 404
+
+    stock = data.get('stock')
+    if stock is None:
+        return jsonify({'error': 'Stock value is required'}), 400
+
+    product.stock = stock
+    db.session.commit()
+    return jsonify({'message': 'Stock updated successfully'}), 200
+
+#-------------------------------------------------Gestión de Pedidos y Pagos------------------------------------------------------------------------------------
+
+"""
+Crear Pedido
+"""
+@api.route('/orders', methods=['POST'])
+@jwt_required()
+def create_order():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    if not data or 'items' not in data:
+        return jsonify({'error': 'No data or items provided'}), 400
+
+    items = data['items']
+    shipping_type = data.get('shipping_type')
+    shipping_address = data.get('shipping_address')
+
+    if not items or not shipping_type:
+        return jsonify({'error': 'Missing items or shipping type'}), 400
+
+    total = sum(item['price'] * item['quantity'] for item in items)
+
+    new_order = Order(
+        user_id=user_id,
+        total=total,
+        shipping_type=shipping_type,
+        shipping_address=shipping_address
+    )
+    db.session.add(new_order)
+    db.session.flush()  # Get the order ID before commit
+
+    for item in items:
+        product = Product.query.get(item['product_id'])
+        if not product or product.stock < item['quantity']:
+            db.session.rollback()
+            return jsonify({'error': 'Product not found or insufficient stock'}), 400
+
+        product.stock -= item['quantity']
+        order_detail = OrderDetail(
+            order_id=new_order.id,
+            product_id=item['product_id'],
+            quantity=item['quantity'],
+            price=item['price']
         )
+        db.session.add(order_detail)
 
-        db.session.add(new_product)  # Añade el nuevo producto a la sesión de la base de datos.
-        db.session.commit()  # Confirma la transacción en la base de datos.
-        return jsonify({'message': 'Product created successfully'}), 201  # Devuelve un mensaje de éxito y un código de estado 201 (Created).
+    db.session.commit()
+    return jsonify({'message': 'Order created successfully', 'order': new_order.id}), 201
 
-    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
-        db.session.rollback()  # Revierte la transacción en caso de error.
-        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+"""
+Actualizar Estado del Pedido
+"""
+@api.route('/orders/<int:order_id>', methods=['PUT'])
+@jwt_required()
+def update_order_status(order_id):
+    data = request.get_json()
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
 
-@api.route('/admin/products/<int:product_id>', methods=['PUT'])  # Define una ruta de la API para '/admin/products/<product_id>' que acepta métodos PUT.
-@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
-def update_product(product_id):  # Define la función que maneja la lógica de esta ruta.
-    try:  # Intenta ejecutar el siguiente bloque de código.
-        data = request.get_json()  # Obtiene los datos en formato JSON del cuerpo de la solicitud.
-        if not data:  # Verifica si no se proporcionaron datos.
-            return jsonify({'error': 'No data provided'}), 400  # Si no se proporcionaron datos, devuelve un mensaje de error y un código de estado 400 (Bad Request).
+    status = data.get('status')
+    if not status:
+        return jsonify({'error': 'Status is required'}), 400
 
-        product = Product.query.get(product_id)  # Busca el producto por su ID.
-        if not product:  # Verifica si el producto no existe.
-            return jsonify({'error': 'Product not found'}), 404  # Si el producto no existe, devuelve un mensaje de error y un código de estado 404 (No encontrado).
+    order.status = status
+    db.session.commit()
+    return jsonify({'message': 'Order status updated successfully'}), 200
 
-        # Actualiza los atributos del producto con los datos proporcionados.
-        for key, value in data.items():
-            if hasattr(product, key):  # Verifica si el producto tiene el atributo especificado.
-                setattr(product, key, value)  # Establece el valor del atributo.
+"""
+Obtener Pedidos
 
-        db.session.commit()  # Confirma la transacción en la base de datos.
-        return jsonify({'message': 'Product updated successfully'}), 200  # Devuelve un mensaje de éxito y un código de estado 200 (OK).
+"""
+@api.route('/orders', methods=['GET'])
+@jwt_required()
+def get_orders():
+    orders = Order.query.all()
+    response = [order.serialize() for order in orders]
+    return jsonify(response), 200
 
-    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
-        db.session.rollback()  # Revierte la transacción en caso de error.
-        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
 
-@api.route('/admin/products/<int:product_id>', methods=['DELETE'])  # Define una ruta de la API para '/admin/products/<product_id>' que acepta métodos DELETE.
-@jwt_required()  # Requiere que el usuario esté autenticado con un JWT (JSON Web Token) para acceder a esta ruta.
-@require_role('admin')  # Requiere que el usuario tenga el rol de 'admin' para acceder a esta ruta.
-def delete_product(product_id):  # Define la función que maneja la lógica de esta ruta.
-    try:  # Intenta ejecutar el siguiente bloque de código.
-        product = Product.query.get(product_id)  # Busca el producto por su ID.
-        if not product:  # Verifica si el producto no existe.
-            return jsonify({'error': 'Product not found'}), 404  # Si el producto no existe, devuelve un mensaje de error y un código de estado 404 (No encontrado).
+#-------------------------------------------------Gestión de Pagos------------------------------------------------------------------------------------
 
-        db.session.delete(product)  # Elimina el producto de la sesión de la base de datos.
-        db.session.commit()  # Confirma la transacción en la base de datos.
-        return jsonify({'message': 'Product deleted successfully'}), 200  # Devuelve un mensaje de éxito y un código de estado 200 (OK).
+"""
+Crear Pago
+"""
+@api.route('/ecommerce-payments', methods=['POST'])
+@jwt_required()
+def create_ecommerce_payment():
+    user_id = get_jwt_identity()
+    data = request.get_json()
 
-    except Exception as e:  # Si ocurre una excepción en el bloque try, se captura aquí.
-        db.session.rollback()  # Revierte la transacción en caso de error.
-        return jsonify({'error': str(e)}), 500  # Devuelve un mensaje de error y un código de estado 500 (Internal Server Error).
+    order_id = data.get('order_id')
+    amount = data.get('amount')
+    payment_method = data.get('payment_method')
+    status = data.get('status')
+    transaction_reference = data.get('transaction_reference')
+    shipping_type = data.get('shipping_type')
+    shipping_address = data.get('shipping_address')
+    estimated_delivery_date = data.get('estimated_delivery_date')
+
+    if not all([order_id, amount, payment_method, status, shipping_type]):
+        return jsonify({'error': 'Missing data'}), 400
+
+    new_payment = EcommercePayment(
+        user_id=user_id,
+        order_id=order_id,
+        amount=amount,
+        payment_method=payment_method,
+        status=status,
+        transaction_reference=transaction_reference,
+        shipping_type=shipping_type,
+        shipping_address=shipping_address,
+        estimated_delivery_date=estimated_delivery_date
+    )
+    db.session.add(new_payment)
+    db.session.commit()
+
+    return jsonify({'message': 'Payment created successfully', 'payment': new_payment.id}), 201
+
+"""
+Obtener Pagos
+"""
+
+@api.route('/ecommerce-payments', methods=['GET'])
+@jwt_required()
+def get_ecommerce_payments():
+    payments = EcommercePayment.query.all()
+    response = [payment.serialize() for payment in payments]
+    return jsonify(response), 200
+
+
+#-------------------------------------------------Gestión de Promociones------------------------------------------------------------------------------------
+
+"""
+Crear Promoción
+"""
+@api.route('/promotions', methods=['POST'])
+@jwt_required()
+def create_promotion():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    name = data.get('name')
+    description = data.get('description')
+    discount_percentage = data.get('discount_percentage')
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    is_active = data.get('is_active', True)
+
+    if not all([name, discount_percentage, start_date, end_date]):
+        return jsonify({'error': 'Missing data'}), 400
+
+    new_promotion = Promotion(
+        name=name,
+        description=description,
+        discount_percentage=discount_percentage,
+        start_date=start_date,
+        end_date=end_date,
+        is_active=is_active
+    )
+    db.session.add(new_promotion)
+    db.session.commit()
+
+    return jsonify({'message': 'Promotion created successfully', 'promotion': new_promotion.id}), 201
+
+"""
+Actualizar Promoción
+"""
+@api.route('/promotions/<int:promotion_id>', methods=['PUT'])
+@jwt_required()
+def update_promotion(promotion_id):
+    data = request.get_json()
+    promotion = Promotion.query.get(promotion_id)
+    if not promotion:
+        return jsonify({'error': 'Promotion not found'}), 404
+
+    for key, value in data.items():
+        if hasattr(promotion, key):
+            setattr(promotion, key, value)
+
+    db.session.commit()
+    return jsonify({'message': 'Promotion updated successfully'}), 200
+
+"""
+Eliminar Promoción
+"""
+@api.route('/promotions/<int:promotion_id>', methods=['DELETE'])
+@jwt_required()
+def delete_promotion(promotion_id):
+    promotion = Promotion.query.get(promotion_id)
+    if not promotion:
+        return jsonify({'error': 'Promotion not found'}), 404
+
+    db.session.delete(promotion)
+    db.session.commit()
+    return jsonify({'message': 'Promotion deleted successfully'}), 200
+
+"""
+Obtener Promociones
+"""
+@api.route('/promotions', methods=['GET'])
+@jwt_required()
+def get_promotions():
+    promotions = Promotion.query.all()
+    response = [promotion.serialize() for promotion in promotions]
+    return jsonify(response), 200
+
+"""
+Asociar Producto con Promoción
+"""
+@api.route('/product-promotions', methods=['POST'])
+@jwt_required()
+def create_product_promotion():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    product_id = data.get('product_id')
+    promotion_id = data.get('promotion_id')
+
+    if not all([product_id, promotion_id]):
+        return jsonify({'error': 'Missing data'}), 400
+
+    new_product_promotion = ProductPromotion(
+        product_id=product_id,
+        promotion_id=promotion_id
+    )
+    db.session.add(new_product_promotion)
+    db.session.commit()
+
+    return jsonify({'message': 'ProductPromotion created successfully', 'product_promotion': new_product_promotion.id}), 201
+
+"""
+Eliminar Asociación de Producto con Promoción
+"""
+@api.route('/product-promotions/<int:product_promotion_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product_promotion(product_promotion_id):
+    product_promotion = ProductPromotion.query.get(product_promotion_id)
+    if not product_promotion:
+        return jsonify({'error': 'ProductPromotion not found'}), 404
+
+    db.session.delete(product_promotion)
+    db.session.commit()
+    return jsonify({'message': 'ProductPromotion deleted successfully'}), 200

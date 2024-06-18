@@ -9,7 +9,7 @@ pipenv run python src/api/print_models.py
 
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Float, DateTime, Boolean, LargeBinary
+from sqlalchemy import Column, ForeignKey, Integer, String, Float, DateTime, Boolean, LargeBinary, Text
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import create_engine
 from eralchemy2 import render_er
@@ -252,30 +252,53 @@ class MessageRecipient(Base):
     def __repr__(self):
         return '<MessageRecipient %r>' % (self.message_id, self.recipient_id)
 
+
+class SubCategory(Base):
+    __tablename__ = 'subcategory'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
+    
+    category = relationship('Category', backref='subcategories')
+
+    def __repr__(self):
+        return '<SubCategory %r>' % self.id
+
 class Product(Base):
     __tablename__ = 'product'
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    description = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
     stock = Column(Integer, nullable=False)
-    category_id = Column(Integer, ForeignKey('category.id'))
+    subcategory_id = Column(Integer, ForeignKey('subcategory.id'))
     is_active = Column(Boolean, default=True)
     
-    category = relationship('Category', backref='products')
+    subcategory = relationship('SubCategory', backref='products')
     images = relationship('ProductImage', backref='product', lazy='dynamic')
+
+    def __repr__(self):
+        return '<Product %r>' % self.id
 
 class Category(Base):
     __tablename__ = 'category'
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    description = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+
+    def __repr__(self):
+        return '<Category %r>' % self.id
+
 
 class ProductImage(Base):
     __tablename__ = 'product_image'
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
     image_data = Column(LargeBinary, nullable=False)
+
+    def __repr__(self):
+        return '<ProductImage %r>' % self.id
 
 class CartItem(Base):
     __tablename__ = 'cart_item'
@@ -287,6 +310,9 @@ class CartItem(Base):
     user = relationship('User', backref='cart_items')
     product = relationship('Product', backref='cart_items')
 
+    def __repr__(self):
+        return '<CartItem %r>' % self.id
+
 class Order(Base):
     __tablename__ = 'order'
     id = Column(Integer, primary_key=True)
@@ -295,11 +321,14 @@ class Order(Base):
     order_date = Column(DateTime, default=datetime.utcnow)
     total = Column(Float, nullable=False)
     status = Column(String(50), default='Pending')
-    shipping_type = Column(String(50), nullable=False) 
-    shipping_address = Column(String(255), nullable=True)  
-    estimated_delivery_date = Column(DateTime, nullable=True) 
+    shipping_type = Column(String(50), nullable=False)
+    shipping_address = Column(String(255), nullable=True)
+    estimated_delivery_date = Column(DateTime, nullable=True)
 
     user = relationship('User', backref='orders')
+
+    def __repr__(self):
+        return '<Order %r>' % self.id
 
 class OrderDetail(Base):
     __tablename__ = 'order_detail'
@@ -312,6 +341,8 @@ class OrderDetail(Base):
     order = relationship('Order', backref='order_details')
     product = relationship('Product', backref='order_details')
 
+    def __repr__(self):
+        return '<OrderDetail %r>' % self.id
 
 class EcommercePayment(Base):
     __tablename__ = 'ecommerce_payment'
@@ -323,9 +354,9 @@ class EcommercePayment(Base):
     payment_method = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False)
     transaction_reference = Column(String(255), nullable=True)
-    shipping_type = Column(String(50), nullable=False) 
-    shipping_address = Column(String(255), nullable=True)  
-    estimated_delivery_date = Column(DateTime, nullable=True) 
+    shipping_type = Column(String(50), nullable=False)
+    shipping_address = Column(String(255), nullable=True)
+    estimated_delivery_date = Column(DateTime, nullable=True)
 
     user = relationship('User', backref='ecommerce_payments')
     order = relationship('Order', backref='ecommerce_payments')
@@ -347,6 +378,31 @@ class EcommercePaymentDetail(Base):
 
     def __repr__(self):
         return '<EcommercePaymentDetail %r>' % self.id
+
+class Promotion(Base):
+    __tablename__ = 'promotion'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    discount_percentage = Column(Float, nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    def __repr__(self):
+        return '<Promotion %r>' % self.id
+
+class ProductPromotion(Base):
+    __tablename__ = 'product_promotion'
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    promotion_id = Column(Integer, ForeignKey('promotion.id'), nullable=False)
+
+    product = relationship('Product', backref='product_promotions')
+    promotion = relationship('Promotion', backref='product_promotions')
+
+    def __repr__(self):
+        return '<ProductPromotion %r>' % self.id
 
 # Generate the diagram
 try:

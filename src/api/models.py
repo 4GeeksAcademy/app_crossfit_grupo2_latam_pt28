@@ -468,6 +468,28 @@ class MessageRecipient(db.Model):
 
 
 #-----------------------------------------------------------------TABLAS PARA EL E-COMMERS--------------------------------------------
+
+class SubCategory(db.Model):
+    __tablename__ = 'subcategory'  # Asegura que el nombre de la tabla sea 'subcategory'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    
+    category = db.relationship('Category', backref='subcategories')
+
+    def __repr__(self):
+        return '<SubCategory %r>' % self.id
+
+    def serialize(self):
+        return {
+            "subcategory_id": self.id,
+            "subcategory_name": self.name,
+            "subcategory_description": self.description,
+            "category_id": self.category_id,
+            "category_name": self.category.name if self.category else "N/A",
+        }
+
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -508,6 +530,7 @@ class Category(db.Model):
             "category_name": self.name,
             "category_description": self.description
         }
+    
 
 
 class ProductImage(db.Model):
@@ -667,4 +690,49 @@ class EcommercePaymentDetail(db.Model):
             "price": self.price,
             "subtotal": self.subtotal,
             "product": self.product.serialize()
+        }
+
+
+class Promotion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    discount_percentage = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return '<Promotion %r>' % self.id
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'discount_percentage': self.discount_percentage,
+            'start_date': self.start_date.isoformat(),
+            'end_date': self.end_date.isoformat(),
+            'is_active': self.is_active
+        }
+
+
+class ProductPromotion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    promotion_id = db.Column(db.Integer, db.ForeignKey('promotion.id'), nullable=False)
+
+    product = db.relationship('Product', backref='product_promotions')
+    promotion = db.relationship('Promotion', backref='product_promotions')
+
+    def __repr__(self):
+        return '<ProductPromotion %r>' % self.id
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'promotion_id': self.promotion_id,
+            'product': self.product.serialize(),
+            'promotion': self.promotion.serialize()
         }

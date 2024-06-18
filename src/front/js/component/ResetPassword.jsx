@@ -47,14 +47,14 @@ const ResetPassword = () => {
         e.preventDefault(); // Previene el comportamiento predeterminado del formulario
 
         // Validación de la contraseña utilizando una expresión regular
-        const passwordRegex = /^(?=.*[A-Z])(?=.*[@#$%^&+=*])(?=.*[0-9a-zA-Z]).{8,}$/; // Se define una expresión regular para validar la contraseña
-        if (!passwordRegex.test(password)) { // Se verifica si la contraseña cumple con los requisitos
-            setError("Password must be at least 8 characters long, contain an uppercase letter, a number, and a special character (#, @, $, %, ^, &, +, =, *)."); // Muestra un mensaje de error si la contraseña no cumple con los requisitos
-            setTimeout(() => {
-                setError(""); // borra el mensaje de error
-            }, 3000);
-            return; // Se detiene el proceso si la contraseña no cumple con los requisitos
-        }
+        // const passwordRegex = /^(?=.*[A-Z])(?=.*[@#$%^&+=*])(?=.*[0-9a-zA-Z]).{8,}$/; // Se define una expresión regular para validar la contraseña
+        // if (!passwordRegex.test(password)) { // Se verifica si la contraseña cumple con los requisitos
+        //     setError("Password must be at least 8 characters long, contain an uppercase letter, a number, and a special character (#, @, $, %, ^, &, +, =, *)."); // Muestra un mensaje de error si la contraseña no cumple con los requisitos
+        //     setTimeout(() => {
+        //         setError(""); // borra el mensaje de error
+        //     }, 3000);
+        //     return; // Se detiene el proceso si la contraseña no cumple con los requisitos
+        // }
 
         if (password !== confirmPassword) { // Verifica si las contraseñas coinciden
             setError('Passwords do not match'); // Almacena un mensaje de error si no coinciden

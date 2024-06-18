@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: e4545d61c959
+Revision ID: 51adffb9def1
 Revises: 
-Create Date: 2024-06-14 12:00:56.080861
+Create Date: 2024-06-17 23:11:58.464836
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e4545d61c959'
+revision = '51adffb9def1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -51,6 +51,16 @@ def upgrade():
     sa.Column('img_data', sa.LargeBinary(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('promotion',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('discount_percentage', sa.Float(), nullable=False),
+    sa.Column('start_date', sa.DateTime(), nullable=False),
+    sa.Column('end_date', sa.DateTime(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('role',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=50), nullable=False),
@@ -74,6 +84,14 @@ def upgrade():
     sa.Column('permission_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['permission_id'], ['permission.id'], ),
     sa.ForeignKeyConstraint(['role_id'], ['role.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('subcategory',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=255), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('category_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['category_id'], ['category.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('user',
@@ -120,6 +138,9 @@ def upgrade():
     sa.Column('order_date', sa.DateTime(), nullable=True),
     sa.Column('total', sa.Float(), nullable=False),
     sa.Column('status', sa.String(length=50), nullable=True),
+    sa.Column('shipping_type', sa.String(length=50), nullable=False),
+    sa.Column('shipping_address', sa.String(length=255), nullable=True),
+    sa.Column('estimated_delivery_date', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -160,6 +181,14 @@ def upgrade():
     sa.Column('product_id', sa.Integer(), nullable=False),
     sa.Column('image_data', sa.LargeBinary(), nullable=False),
     sa.ForeignKeyConstraint(['product_id'], ['product.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('product_promotion',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('product_id', sa.Integer(), nullable=False),
+    sa.Column('promotion_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['product_id'], ['product.id'], ),
+    sa.ForeignKeyConstraint(['promotion_id'], ['promotion.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('security_question',
@@ -214,6 +243,9 @@ def upgrade():
     sa.Column('payment_method', sa.String(length=50), nullable=False),
     sa.Column('status', sa.String(length=50), nullable=False),
     sa.Column('transaction_reference', sa.String(length=255), nullable=True),
+    sa.Column('shipping_type', sa.String(length=50), nullable=False),
+    sa.Column('shipping_address', sa.String(length=255), nullable=True),
+    sa.Column('estimated_delivery_date', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -274,6 +306,7 @@ def downgrade():
     op.drop_table('user_membership_history')
     op.drop_table('training_classes')
     op.drop_table('security_question')
+    op.drop_table('product_promotion')
     op.drop_table('product_image')
     op.drop_table('pr_record')
     op.drop_table('payment')
@@ -281,9 +314,11 @@ def downgrade():
     op.drop_table('messages_send')
     op.drop_table('cart_item')
     op.drop_table('user')
+    op.drop_table('subcategory')
     op.drop_table('role_permission')
     op.drop_table('product')
     op.drop_table('role')
+    op.drop_table('promotion')
     op.drop_table('profile_image')
     op.drop_table('permission')
     op.drop_table('movement_images')
