@@ -270,6 +270,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    purchase_price = Column(Float, nullable=True)
     price = Column(Float, nullable=False)
     stock = Column(Integer, nullable=False)
     subcategory_id = Column(Integer, ForeignKey('subcategory.id'))
