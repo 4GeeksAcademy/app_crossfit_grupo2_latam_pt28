@@ -88,6 +88,7 @@
 		"react-chartjs-2": "^5.2.0",
 		"react-circular-progressbar": "^2.1.0",
 		"react-dom": "^16.14.0",
+		"react-easy-crop": "^5.0.7",
 		"react-icons": "^5.2.1",
 		"react-modal": "^3.16.1",
 		"react-polyfills": "0.0.1",

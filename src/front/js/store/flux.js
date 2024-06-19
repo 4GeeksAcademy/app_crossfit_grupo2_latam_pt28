@@ -41,6 +41,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 			categories: [],
 			subcategories: [],
+			products: [],
 
 
 
@@ -1258,6 +1259,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 					});
 					let data = await response.json();
+					console.log("loadCategories: ", data)
+
 					if (response.ok) {
 						setStore({ ...getStore(), categories: data });
 					} else {
@@ -1281,6 +1284,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 					});
 					let data = await response.json();
+					console.log("loadSubcategories: ", data)
+
 					if (response.ok) {
 						setStore({ ...getStore(), subcategories: data });
 					} else {
@@ -1290,6 +1295,165 @@ const getState = ({ getStore, getActions, setStore }) => {
 					console.error("Error loading subcategories:", error);
 				}
 			},
+
+			//---------------------------------------------------------FUNCION PARA PRODUCTOS--------------------------------------------------------------------------
+			createProduct: async (productData) => {
+				console.log("createProduct: ", productData)
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products`;
+
+				try {
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(productData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error creating product: ${error.message}`);
+				}
+			},
+
+			editProduct: async (productId, productData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(productData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error editing product: ${error.message}`);
+				}
+			},
+
+			deleteProduct: async (productId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting product: ${error.message}`);
+				}
+			},
+
+			uploadProductImage: async (productId, imageData) => {
+				console.log("productId: ", productId, " image: ", imageData);
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/upload_product_image/${productId}`;
+
+				try {
+					const formData = new FormData();
+					formData.append("file", imageData, "image.jpg"); // Asegurando el nombre del archivo
+
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+						body: formData,
+					});
+
+					const data = await response.json();
+					console.log(data)
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error uploading product image: ${error.message}`);
+				}
+			},
+
+			deleteProductImage: async (imageId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/delete_product_image/${imageId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting product image: ${error.message}`);
+				}
+			},
+
+
+			loadProducts: async () => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products`;
+
+				try {
+					const response = await fetch(url, {
+						method: "GET",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const products = await response.json();
+					console.log("loadProducts: ", products)
+
+					if (response.ok) {
+						setStore({ ...getStore(), products });
+					} else {
+						console.error("Error loading products:", products.error);
+					}
+				} catch (error) {
+					console.error("Error loading products:", error);
+				}
+			},
+
 
 
 

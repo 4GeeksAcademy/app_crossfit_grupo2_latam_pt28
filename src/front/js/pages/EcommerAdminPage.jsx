@@ -7,6 +7,7 @@ import { Context } from "../store/appContext";
 import Sidebar from "../component/Sidebar.jsx";
 
 import CreateCategoryForm from "../component/ecommer/CreateCategoryForm.jsx";
+import CreateProductForm from "../component/ecommer/CreateProductForm.jsx";
 
 
 const EcommerAdminPage = () => {
@@ -33,6 +34,7 @@ const EcommerAdminPage = () => {
 
     const components = [
         { component: <CreateCategoryForm />, name: "Create Category" },
+        { component: <CreateProductForm />, name: "Create Product" },
 
     ];
 

@@ -494,12 +494,13 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    purchase_price = db.Column(db.Float, nullable=True)
     price = db.Column(db.Float, nullable=False)
     stock = db.Column(db.Integer, nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategory.id'))
     is_active = db.Column(db.Boolean, default=True)
 
-    category = db.relationship('Category', backref='products')
+    subcategory = db.relationship('SubCategory', backref='products')
     images = db.relationship('ProductImage', backref='product', lazy='dynamic')
 
     def __repr__(self):
@@ -510,9 +511,15 @@ class Product(db.Model):
             "product_id": self.id,
             "product_name": self.name,
             "product_description": self.description,
+            "product_purchase_price": self.purchase_price,
             "product_price": self.price,
             "product_stock": self.stock,
-            "product_category": self.category.name if self.category else "N/A",
+            "product_category": self.subcategory.category.name if self.subcategory and self.subcategory.category else "N/A",
+            "product_subcategory": self.subcategory.name if self.subcategory else "N/A",
+            "product_images": [image.image_url() for image in self.images] if self.images else [],
+            "product_image_id": [image.id for image in self.images] if self.images else []
+
+
         }
 
 

@@ -5,6 +5,7 @@ import styles from "./PrivatePageUser.module.css"; // Importación de estilos CS
 
 import PrivateCalendar from "../component/PrivateCalendar.jsx";
 import PRRecord from "../component/PRRecord.jsx";
+import CreateProductForm from "../component/ecommer/CreateProductForm.jsx";
 
 
 const PrivatePageUser = () => {
@@ -66,8 +67,9 @@ const PrivatePageUser = () => {
                     </div>
                 </div>
             </div> */}
-            <PrivateCalendar />
-            <PRRecord />
+            {/* <PrivateCalendar />
+            <PRRecord /> */}
+            <CreateProductForm />
         </>
     );
 };

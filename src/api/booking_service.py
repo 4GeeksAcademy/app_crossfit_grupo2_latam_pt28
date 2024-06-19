@@ -382,7 +382,7 @@ def optimize_image(file_stream):
     
     # Redimensionar la imagen manteniendo el aspecto
     max_size = (800, 800)  # Puedes ajustar esto a lo que mejor se adapte a tus necesidades
-    image.thumbnail(max_size, Image.ANTIALIAS)
+    image.thumbnail(max_size, Image.Resampling.LANCZOS)
     
     # Guardar la imagen optimizada en un objeto de tipo bytes
     img_byte_arr = io.BytesIO()

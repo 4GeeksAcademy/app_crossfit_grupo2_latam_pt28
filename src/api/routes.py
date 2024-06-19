@@ -1996,11 +1996,13 @@ Crear Producto
 @jwt_required()
 def create_product():
     data = request.get_json()
+    print(data)
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
     name = data.get('name')
     description = data.get('description', '')
+    purchase_price = data.get('purchase_price', 0.0)
     price = data.get('price', 0.0)
     stock = data.get('stock', 0)
     subcategory_id = data.get('subcategory_id')
@@ -2009,17 +2011,20 @@ def create_product():
     # Validación de tipo y formato
     if not isinstance(name, str) or not name.strip():
         return jsonify({'error': 'Invalid name'}), 400
+    if not isinstance(purchase_price, (int, float)) or purchase_price < 0:
+        return jsonify({'error': 'Invalid purchase_price'}), 400
     if not isinstance(price, (int, float)) or price < 0:
         return jsonify({'error': 'Invalid price'}), 400
     if not isinstance(stock, int) or stock < 0:
         return jsonify({'error': 'Invalid stock'}), 400
-    if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
-        return jsonify({'error': 'Invalid subcategory ID'}), 400
+    # if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
+    #     return jsonify({'error': 'Invalid subcategory ID'}), 400
 
     try:
         new_product = Product(
             name=name.strip(),
             description=description,
+            purchase_price=purchase_price,
             price=price,
             stock=stock,
             subcategory_id=subcategory_id,
@@ -2049,11 +2054,14 @@ def update_product(product_id):
         return jsonify({'error': 'Product not found'}), 404
 
     name = data.get('name')
+    purchase_price = data.get('purchase_price')
     price = data.get('price')
     stock = data.get('stock')
 
     if name and not isinstance(name, str):
         return jsonify({'error': 'Invalid name'}), 400
+    if purchase_price is not None and (not isinstance(purchase_price, (int, float)) or purchase_price < 0):
+        return jsonify({'error': 'Invalid price'}), 400
     if price is not None and (not isinstance(price, (int, float)) or price < 0):
         return jsonify({'error': 'Invalid price'}), 400
     if stock is not None and (not isinstance(stock, int) or stock < 0):
@@ -2062,6 +2070,8 @@ def update_product(product_id):
     try:
         if name:
             product.name = name.strip()
+        if purchase_price is not None:
+            product.purchase_price = purchase_price
         if price is not None:
             product.price = price
         if stock is not None:
@@ -2093,7 +2103,7 @@ def delete_product(product_id):
 Obtener Productos
 """
 @api.route('/products', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def get_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -2105,6 +2115,13 @@ def get_products():
         'current_page': products.page
     }
     return jsonify(response), 200
+
+# @api.route('/products', methods=['GET'])
+# @jwt_required()
+# def get_products():
+#     products = Product.query.all()
+#     response = [product.serialize() for product in products]
+#     return jsonify(response), 200
 
 """
 busqueda de Productos
@@ -2589,6 +2606,7 @@ def upload_product_image(product_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
     
 """
 actualizar imagen producto
