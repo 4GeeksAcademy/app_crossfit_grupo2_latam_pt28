@@ -34,7 +34,7 @@ const EcommerAdminPage = () => {
 
     const components = [
         { component: <CreateCategoryForm />, name: "Create Category" },
-        { component: <CreateProductForm />, name: "Create Product" },
+        { component: <CreateProductForm />, name: "Product Manager" },
 
     ];
 

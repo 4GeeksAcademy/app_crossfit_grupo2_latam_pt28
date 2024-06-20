@@ -6,7 +6,6 @@
     color: var(--color-dark);
 }
 
-.formContainer input,
 .formContainer select,
 .formContainer textarea {
     margin-top: 5px;
@@ -29,6 +28,7 @@
 .button {
     background-color: var(--color-green);
     border: none;
+    margin-bottom: 5px;
 }
 
 .table {
@@ -39,6 +39,10 @@
 
 .tableRow {
     background-color: var(--color-grey);
+}
+
+.tablecolumn {
+    font-size: xx-small;
 }
 
 .editButton,
@@ -56,6 +60,12 @@
     padding: 5px;
     margin-bottom: 5px;
     border-radius: 4px;
+}
+
+.buttonCancelEdit {
+    background-color: #6c757d;
+    border: none;
+    margin-left: 5px;
 }
 
 .editButton {
@@ -145,4 +155,11 @@
 .pillImageList {
     display: flex;
     flex-wrap: wrap;
+}
+
+.buttonExcel {
+    display: block;
+    font-size: 5px;
+    padding: 5px 10px;
+    margin: 1px;
 }

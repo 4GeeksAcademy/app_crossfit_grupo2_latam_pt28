@@ -1129,7 +1129,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 			//---------------------------------------------------------FUNCION PARA PARA EL E-COMMER--------------------------------------------------------------------------
 			createCategory: async (categoryData) => {
-				console.log(categoryData)
+				// console.log(categoryData)
 				let myToken = localStorage.getItem("token");
 				let url = `${process.env.BACKEND_URL}/api/categories`;
 
@@ -1200,7 +1200,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 			createSubCategory: async (subCategoryData) => {
-				console.log(subCategoryData)
+				// console.log(subCategoryData)
 				let myToken = localStorage.getItem("token");
 				let url = `${process.env.BACKEND_URL}/api/subcategories`;
 
@@ -1259,7 +1259,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 					});
 					let data = await response.json();
-					console.log("loadCategories: ", data)
+					// console.log("loadCategories: ", data)
 
 					if (response.ok) {
 						setStore({ ...getStore(), categories: data });
@@ -1284,7 +1284,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 						},
 					});
 					let data = await response.json();
-					console.log("loadSubcategories: ", data)
+					// console.log("loadSubcategories: ", data)
 
 					if (response.ok) {
 						setStore({ ...getStore(), subcategories: data });
@@ -1298,7 +1298,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 			//---------------------------------------------------------FUNCION PARA PRODUCTOS--------------------------------------------------------------------------
 			createProduct: async (productData) => {
-				console.log("createProduct: ", productData)
+				// console.log("createProduct: ", productData)
 				const myToken = localStorage.getItem("token");
 				const url = `${process.env.BACKEND_URL}/api/products`;
 
@@ -1375,7 +1375,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 			uploadProductImage: async (productId, imageData) => {
-				console.log("productId: ", productId, " image: ", imageData);
+				// console.log("productId: ", productId, " image: ", imageData);
 				const myToken = localStorage.getItem("token");
 				const url = `${process.env.BACKEND_URL}/api/upload_product_image/${productId}`;
 
@@ -1392,7 +1392,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					});
 
 					const data = await response.json();
-					console.log(data)
+					// console.log(data)
 
 					if (response.ok) {
 						return { success: true, data };
@@ -1429,9 +1429,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 
-			loadProducts: async () => {
+			loadProducts: async (page) => {
 				const myToken = localStorage.getItem("token");
-				const url = `${process.env.BACKEND_URL}/api/products`;
+				const url = `${process.env.BACKEND_URL}/api/products?page=${page}`;
 
 				try {
 					const response = await fetch(url, {
@@ -1442,17 +1442,30 @@ const getState = ({ getStore, getActions, setStore }) => {
 					});
 
 					const products = await response.json();
-					console.log("loadProducts: ", products)
+					// console.log("loadProducts: ", products);
 
 					if (response.ok) {
-						setStore({ ...getStore(), products });
+						setStore({ ...getStore(), products: products });
+						return {
+							success: true,
+							data: products
+						};
 					} else {
 						console.error("Error loading products:", products.error);
+						return {
+							success: false,
+							error: products.error
+						};
 					}
 				} catch (error) {
 					console.error("Error loading products:", error);
+					return {
+						success: false,
+						error: error.message
+					};
 				}
 			},
+
 
 
 

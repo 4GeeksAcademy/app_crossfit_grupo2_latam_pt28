@@ -492,6 +492,8 @@ class SubCategory(db.Model):
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    product_creation_date = db.Column(db.DateTime, default=datetime.utcnow)
+    product_modification_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     purchase_price = db.Column(db.Float, nullable=True)
@@ -509,6 +511,9 @@ class Product(db.Model):
     def serialize(self):
         return {
             "product_id": self.id,
+            "is_active": self.is_active,
+            "product_creation_date": self.product_creation_date.isoformat(),  # Formato ISO de la fecha
+            "product_modification_date": self.product_modification_date.isoformat(),  # Formato ISO de la fecha
             "product_name": self.name,
             "product_description": self.description,
             "product_purchase_price": self.purchase_price,

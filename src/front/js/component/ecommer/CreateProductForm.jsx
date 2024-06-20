@@ -1,8 +1,9 @@
 import React, { useState, useContext, useEffect } from "react"; // Importa React y hooks necesarios
 import { Context } from "../../store/appContext"; // Importa el contexto de la aplicación
 import styles from "./CreateProductForm.module.css"; // Importa los estilos del componente
-import { Button, Form, Container, Row, Col, Modal, Table, Image } from 'react-bootstrap'; // Importa componentes de react-bootstrap
+import { Button, Form, Container, Row, Col, Modal, Table, Image, InputGroup, FormControl } from 'react-bootstrap'; // Importa componentes de react-bootstrap
 import Cropper from 'react-easy-crop'; // Importa el componente de recorte de imagen
+import * as XLSX from 'xlsx'; // Importa XLSX para exportar a Excel
 
 const CreateProductForm = () => {
     const { actions, store } = useContext(Context); // Obtiene acciones y estado del contexto
@@ -13,6 +14,7 @@ const CreateProductForm = () => {
         price: "",
         stock: "",
         subcategory_id: "",
+        is_active: true,
     });
     const [showModal, setShowModal] = useState(false); // Estado para controlar la visibilidad del modal
     const [modalMessage, setModalMessage] = useState(""); // Estado para el mensaje del modal
@@ -28,6 +30,8 @@ const CreateProductForm = () => {
     const [croppedImages, setCroppedImages] = useState([]); // Estado para los blobs de las imágenes recortadas
     const [hoveredImage, setHoveredImage] = useState(null); // Estado para la imagen ampliada al pasar el mouse
     const [deletedImages, setDeletedImages] = useState([]); // Estado para almacenar los IDs de imágenes eliminadas
+    const [search, setSearch] = useState(''); // Estado para la búsqueda de productos
+    const [filteredProducts, setFilteredProducts] = useState([]); // Estado para los productos filtrados
 
     useEffect(() => {
         actions.loadCategories(); // Carga las categorías al montar el componente
@@ -35,9 +39,21 @@ const CreateProductForm = () => {
         loadProducts(currentPage); // Carga los productos de la página actual
     }, [currentPage]);
 
+    useEffect(() => {
+        if (store.products.products) {
+            setFilteredProducts(store.products.products.filter(product =>
+                product.product_name.toLowerCase().includes(search.toLowerCase()) ||
+                product.product_category.toLowerCase().includes(search.toLowerCase()) ||
+                product.product_subcategory.toLowerCase().includes(search.toLowerCase())
+
+            ));
+        }
+    }, [search, store.products.products]);
+
     const loadProducts = async (page) => {
         try {
             const result = await actions.loadProducts(page); // Llama a la acción para cargar productos
+            // console.log(result)
             if (result && result.success) {
                 setTotalPages(result.data.pages); // Actualiza el total de páginas si la carga es exitosa
             } else {
@@ -106,7 +122,8 @@ const CreateProductForm = () => {
             purchase_price: parseFloat(formData.purchase_price),
             price: parseFloat(formData.price),
             stock: parseInt(formData.stock),
-            subcategory_id: formData.subcategory_id
+            subcategory_id: formData.subcategory_id,
+            is_active: formData.is_active,
         };
 
         try {
@@ -138,6 +155,7 @@ const CreateProductForm = () => {
                 price: "",
                 stock: "",
                 subcategory_id: "",
+                is_active: true,
             });
             setEditingProduct(null);
             setImages([]);
@@ -162,6 +180,7 @@ const CreateProductForm = () => {
             price: product.product_price,
             stock: product.product_stock,
             subcategory_id: product.subcategory_id,
+            is_active: product.is_active,
         });
         setEditingProduct(product);
         setProductImages(product.product_images.map((url, index) => ({
@@ -221,7 +240,6 @@ const CreateProductForm = () => {
             pixelCrop.height  // El alto del área en el canvas donde queremos dibujar la imagen recortada
         ); // Dibuja la imagen recortada en el canvas
 
-
         return new Promise((resolve) => {
             canvas.toBlob((file) => {
                 resolve(file); // Resuelve la promesa con el blob de la imagen
@@ -240,6 +258,33 @@ const CreateProductForm = () => {
     const handleImageDelete = (imageId) => {
         setDeletedImages([...deletedImages, imageId]); // Agrega la imagen a eliminar al array
         setProductImages(productImages.filter(image => image.id !== imageId)); // Elimina la imagen del estado
+    };
+
+    const toggleActiveStatus = () => {
+        setFormData({ ...formData, is_active: !formData.is_active });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingProduct(null); // Reinicia el estado de edición
+        setFormData({
+            name: "",
+            description: "",
+            purchase_price: "",
+            price: "",
+            stock: "",
+            subcategory_id: "",
+            is_active: true,
+        });
+        setImages([]);
+        setCroppedImages([]);
+        setDeletedImages([]);
+    };
+
+    const downloadExcel = () => {
+        const ws = XLSX.utils.json_to_sheet(filteredProducts);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Products');
+        XLSX.writeFile(wb, 'Products.xlsx');
     };
 
     return (
@@ -391,6 +436,22 @@ const CreateProductForm = () => {
                         </Col>
                     </Row>
                 )}
+                {editingProduct && (
+                    <Row className="mb-3">
+                        <Col>
+                            <Form.Group>
+                                <Form.Label className={styles.label}>Product Status</Form.Label>
+                                <div onClick={toggleActiveStatus} style={{ cursor: 'pointer' }}>
+                                    {formData.is_active ? (
+                                        <i className="fa-solid fa-toggle-on" style={{ color: 'green', fontSize: '24px' }}></i>
+                                    ) : (
+                                        <i className="fa-solid fa-toggle-off" style={{ color: 'red', fontSize: '24px' }}></i>
+                                    )}
+                                </div>
+                            </Form.Group>
+                        </Col>
+                    </Row>
+                )}
                 {editingProduct && productImages.length > 0 && (
                     <div className="edit-images-section">
                         <h5>Product Images</h5>
@@ -416,9 +477,24 @@ const CreateProductForm = () => {
                 <Button variant="primary" type="submit" className={styles.button}>
                     {editingProduct ? 'Edit Product' : 'Create Product'}
                 </Button>
+                {editingProduct && (
+                    <Button variant="secondary" onClick={handleCancelEdit} className={styles.buttonCancelEdit}>
+                        Cancel Edit
+                    </Button>
+                )}
             </Form>
 
             <div className="table-responsive">
+                <InputGroup>
+                    <FormControl
+                        placeholder="Search by product name, category, subcategory"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <Button variant="outline-secondary" onClick={downloadExcel} className={styles.buttonExcel} title='Download .xlsx'>
+                        <i className="fa-solid fa-file-excel"></i> Download Excel
+                    </Button>
+                </InputGroup>
                 <Table className={styles.table}>
                     <thead>
                         <tr>
@@ -428,15 +504,16 @@ const CreateProductForm = () => {
                             <th>Stock</th>
                             <th>Category</th>
                             <th>Subcategory</th>
-                            <th>Images</th> {/* Nueva columna para imágenes */}
+                            <th>Images</th>
+                            <th>Status</th> {/* Nueva columna para el estado */}
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {Array.isArray(store.products.products) && store.products.products.map((product) => (
+                        {filteredProducts.map((product) => (
                             <tr key={product.product_id} className={styles.tableRow}>
                                 <td>{product.product_name}</td>
-                                <td>{product.product_description}</td>
+                                <td className={styles.tablecolumn}>{product.product_description}</td>
                                 <td>{product.product_price}</td>
                                 <td>{product.product_stock}</td>
                                 <td>{product.product_category}</td>
@@ -452,6 +529,13 @@ const CreateProductForm = () => {
                                             onMouseLeave={handleMouseLeave}
                                         />
                                     ))}
+                                </td>
+                                <td>
+                                    {product.is_active ? (
+                                        <i className="fa-solid fa-power-off" style={{ color: 'green' }}></i>
+                                    ) : (
+                                        <i className="fa-solid fa-power-off" style={{ color: 'red' }}></i>
+                                    )}
                                 </td>
                                 <td>
                                     <Button

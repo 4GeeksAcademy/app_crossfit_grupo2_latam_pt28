@@ -2057,6 +2057,7 @@ def update_product(product_id):
     purchase_price = data.get('purchase_price')
     price = data.get('price')
     stock = data.get('stock')
+    is_active = data.get('is_active')
 
     if name and not isinstance(name, str):
         return jsonify({'error': 'Invalid name'}), 400
@@ -2066,6 +2067,8 @@ def update_product(product_id):
         return jsonify({'error': 'Invalid price'}), 400
     if stock is not None and (not isinstance(stock, int) or stock < 0):
         return jsonify({'error': 'Invalid stock'}), 400
+    if is_active is not None and not isinstance(is_active, bool):
+        return jsonify({'error': 'Invalid is_active value'}), 400
 
     try:
         if name:
@@ -2076,11 +2079,14 @@ def update_product(product_id):
             product.price = price
         if stock is not None:
             product.stock = stock
+        if is_active is not None:
+            product.is_active = is_active
         db.session.commit()
         return jsonify({'message': 'Product updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 
 
@@ -2106,7 +2112,7 @@ Obtener Productos
 # @jwt_required()
 def get_products():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     products = Product.query.paginate(page=page, per_page=per_page, error_out=False)
     response = {
         'products': [product.serialize() for product in products.items],
