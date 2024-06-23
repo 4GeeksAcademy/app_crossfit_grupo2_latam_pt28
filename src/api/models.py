@@ -490,7 +490,41 @@ class SubCategory(db.Model):
             "category_name": self.category.name if self.category else "N/A",
         }
 
+class Attribute(db.Model):
+    __tablename__ = 'attribute'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+
+    def __repr__(self):
+        return '<Attribute %r>' % self.id
+
+    def serialize(self):
+        return {
+            "attribute_id": self.id,
+            "attribute_name": self.name
+        }
+
+class AttributeValue(db.Model):
+    __tablename__ = 'attribute_value'
+    id = db.Column(db.Integer, primary_key=True)
+    attribute_id = db.Column(db.Integer, db.ForeignKey('attribute.id'), nullable=False)
+    value = db.Column(db.String(255), nullable=False)
+    
+    attribute = db.relationship('Attribute', backref='attribute_values')
+
+    def __repr__(self):
+        return '<AttributeValue %r>' % self.id
+
+    def serialize(self):
+        return {
+            "attribute_value_id": self.id,
+            "attribute_id": self.attribute_id,
+            "attribute_name": self.attribute.name if self.attribute else "N/A",
+            "value": self.value
+        }
+
 class Product(db.Model):
+    __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
     product_creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     product_modification_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -503,7 +537,8 @@ class Product(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     subcategory = db.relationship('SubCategory', backref='products')
-    images = db.relationship('ProductImage', backref='product', lazy='dynamic')
+    variants = db.relationship('ProductVariant', backref='parent_product', lazy='dynamic')
+    images = db.relationship('ProductImage', backref='image_product', lazy='dynamic')
 
     def __repr__(self):
         return '<Product %r>' % self.id
@@ -512,20 +547,91 @@ class Product(db.Model):
         return {
             "product_id": self.id,
             "is_active": self.is_active,
-            "product_creation_date": self.product_creation_date.isoformat(),  # Formato ISO de la fecha
-            "product_modification_date": self.product_modification_date.isoformat(),  # Formato ISO de la fecha
+            "product_creation_date": self.product_creation_date.isoformat(),
+            "product_modification_date": self.product_modification_date.isoformat(),
             "product_name": self.name,
             "product_description": self.description,
             "product_purchase_price": self.purchase_price,
             "product_price": self.price,
-            "product_stock": self.stock,
+            "product_stock": self.get_total_stock(),
             "product_category": self.subcategory.category.name if self.subcategory and self.subcategory.category else "N/A",
             "product_subcategory": self.subcategory.name if self.subcategory else "N/A",
             "product_images": [image.image_url() for image in self.images] if self.images else [],
             "product_image_id": [image.id for image in self.images] if self.images else []
-
-
         }
+
+    def get_total_stock(self):
+        return self.stock + sum(variant.stock for variant in self.variants)
+
+
+class ProductVariant(db.Model):
+    __tablename__ = 'product_variant'
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    sku = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    stock = db.Column(db.Integer, nullable=False)
+    images = db.relationship('VariantImage', backref='variant', lazy='dynamic')
+
+    product = db.relationship('Product', backref='product_variants')
+    attributes = db.relationship('VariantAttribute', backref='variant', lazy='dynamic')
+
+    def __repr__(self):
+        return '<ProductVariant %r>' % self.id
+
+    def serialize(self):
+        return {
+            "variant_id": self.id,
+            "product_id": self.product_id,
+            "product_name": self.product.name,
+            "sku": self.sku,
+            "price": self.price,
+            "stock": self.stock,
+            "attributes": [attribute.serialize() for attribute in self.attributes],
+            "images": [image.image_url() for image in self.images] if self.images else [],
+            "variant_image_id": [image.id for image in self.images] if self.images else []
+        }
+
+class VariantAttribute(db.Model):
+    __tablename__ = 'variant_attribute'
+    variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), primary_key=True)
+    attribute_id = db.Column(db.Integer, db.ForeignKey('attribute.id'), primary_key=True)
+    attribute_value_id = db.Column(db.Integer, db.ForeignKey('attribute_value.id'), primary_key=True)
+
+    attribute = db.relationship('Attribute', backref='variant_attributes')
+    attribute_value = db.relationship('AttributeValue', backref='variant_attributes')
+
+    def __repr__(self):
+        return '<VariantAttribute %r>' % self.variant_id
+
+    def serialize(self):
+        return {
+            "variant_id": self.variant_id,
+            "attribute_id": self.attribute_id,
+            "attribute_value_id": self.attribute_value_id,
+            "attribute_name": self.attribute.name if self.attribute else "N/A",
+            "attribute_value": self.attribute_value.value if self.attribute_value else "N/A"
+        }
+
+class VariantImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), nullable=False)
+    image_data = db.Column(LargeBinary, nullable=False)
+    
+    def image_url(self):
+        return f"data:image/jpeg;base64,{base64.b64encode(self.image_data).decode('utf-8')}"
+
+    def __repr__(self):
+        return '<VariantImage %r>' % self.id
+
+    def serialize(self):
+        return {
+            "image_id": self.id,
+            "variant_id": self.variant_id,
+            "image_url": self.image_url(),
+        }
+    
+    
 
 
 class Category(db.Model):

@@ -42,6 +42,8 @@ const getState = ({ getStore, getActions, setStore }) => {
 			categories: [],
 			subcategories: [],
 			products: [],
+			attributes: [],
+			variants: [],
 
 
 
@@ -1324,32 +1326,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 
-			editProduct: async (productId, productData) => {
-				const myToken = localStorage.getItem("token");
-				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
-
-				try {
-					const response = await fetch(url, {
-						method: "PUT",
-						headers: {
-							"Authorization": `Bearer ${myToken}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(productData),
-					});
-
-					const data = await response.json();
-
-					if (response.ok) {
-						return { success: true, data };
-					} else {
-						return { success: false, error: data.error || "An unknown error occurred" };
-					}
-				} catch (error) {
-					throw new Error(`Error editing product: ${error.message}`);
-				}
-			},
-
 			deleteProduct: async (productId) => {
 				const myToken = localStorage.getItem("token");
 				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
@@ -1465,6 +1441,295 @@ const getState = ({ getStore, getActions, setStore }) => {
 					};
 				}
 			},
+
+			// Funciones para manejar atributos y variantes
+			createAttribute: async (attributeData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes`;
+
+				try {
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(attributeData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error creating attribute: ${error.message}`);
+				}
+			},
+
+			createAttributeValue: async (attributeId, valueData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes/${attributeId}/values`;
+
+				try {
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(valueData),
+					});
+
+					const data = await response.json();
+					console.log(data)
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error creating attribute value: ${error.message}`);
+				}
+			},
+
+			createProductVariant: async (productId, variantData) => {
+				console.log("productId: ", productId, " variantData: ", variantData)
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/api/products/${productId}/variants`;
+
+				try {
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(variantData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error creating product variant: ${error.message}`);
+				}
+			},
+
+			loadAttributes: async () => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes`;
+
+				try {
+					const response = await fetch(url, {
+						method: "GET",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const attributes = await response.json();
+
+					if (response.ok) {
+						setStore({ ...getStore(), attributes: attributes });
+					} else {
+						console.error("Error loading attributes:", attributes.error);
+					}
+				} catch (error) {
+					console.error("Error loading attributes:", error);
+				}
+			},
+
+			loadProductVariants: async (productId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/api/products/${productId}/variants`;
+
+				try {
+					const response = await fetch(url, {
+						method: "GET",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const variants = await response.json();
+					console.log(variants)
+
+					if (response.ok) {
+						setStore({ ...getStore(), variants: variants });
+					} else {
+						console.error("Error loading product variants:", variants.error);
+					}
+				} catch (error) {
+					console.error("Error loading product variants:", error);
+				}
+			},
+
+			loadAttributeValues: async (attributeId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes/${attributeId}/values`;
+
+				try {
+					const response = await fetch(url, {
+						method: "GET",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const values = await response.json();
+
+					if (response.ok) {
+						const store = getStore();
+						const updatedAttributes = store.attributes.map(attr => {
+							if (attr.attribute_id === attributeId) {
+								return { ...attr, values };
+							}
+							return attr;
+						});
+						setStore({ ...store, attributes: updatedAttributes });
+					} else {
+						console.error("Error loading attribute values:", values.error);
+					}
+				} catch (error) {
+					console.error("Error loading attribute values:", error);
+				}
+			},
+
+			editProduct: async (productId, productData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(productData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error editing product: ${error.message}`);
+				}
+			},
+
+			editProductVariant: async (variantId, variantData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(variantData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error editing product variant: ${error.message}`);
+				}
+			},
+
+
+			deleteProductVariant: async (variantId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting product variant: ${error.message}`);
+				}
+			},
+
+			uploadVariantImage: async (variantId, imageData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/upload_variant_image/${variantId}`;
+
+				try {
+					const formData = new FormData();
+					formData.append("file", imageData, "image.jpg");
+
+					const response = await fetch(url, {
+						method: "POST",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+						body: formData,
+					});
+
+					const data = await response.json();
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error uploading variant image: ${error.message}`);
+				}
+			},
+
+			deleteVariantImage: async (imageId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/delete_variant_image/${imageId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting variant image: ${error.message}`);
+				}
+			},
+
 
 
 

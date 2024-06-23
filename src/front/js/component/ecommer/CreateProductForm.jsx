@@ -1,13 +1,13 @@
-import React, { useState, useContext, useEffect } from "react"; // Importa React y hooks necesarios
-import { Context } from "../../store/appContext"; // Importa el contexto de la aplicación
-import styles from "./CreateProductForm.module.css"; // Importa los estilos del componente
-import { Button, Form, Container, Row, Col, Modal, Table, Image, InputGroup, FormControl } from 'react-bootstrap'; // Importa componentes de react-bootstrap
-import Cropper from 'react-easy-crop'; // Importa el componente de recorte de imagen
-import * as XLSX from 'xlsx'; // Importa XLSX para exportar a Excel
+import React, { useState, useContext, useEffect } from "react";
+import { Context } from "../../store/appContext";
+import styles from "./CreateProductForm.module.css";
+import { Button, Form, Container, Row, Col, Modal, Table, Image, InputGroup, FormControl, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import Cropper from 'react-easy-crop';
+import * as XLSX from 'xlsx';
 
 const CreateProductForm = () => {
-    const { actions, store } = useContext(Context); // Obtiene acciones y estado del contexto
-    const [formData, setFormData] = useState({ // Define el estado para los datos del formulario
+    const { actions, store } = useContext(Context);
+    const [formData, setFormData] = useState({
         name: "",
         description: "",
         purchase_price: "",
@@ -16,27 +16,42 @@ const CreateProductForm = () => {
         subcategory_id: "",
         is_active: true,
     });
-    const [showModal, setShowModal] = useState(false); // Estado para controlar la visibilidad del modal
-    const [modalMessage, setModalMessage] = useState(""); // Estado para el mensaje del modal
-    const [editingProduct, setEditingProduct] = useState(null); // Estado para el producto en edición
-    const [images, setImages] = useState([]); // Estado para las URLs de las imágenes
-    const [productImages, setProductImages] = useState([]); // Estado para las imágenes del producto con IDs
-    const [croppedAreas, setCroppedAreas] = useState([]); // Estado para las áreas recortadas de las imágenes
-    const [currentImageIndex, setCurrentImageIndex] = useState(0); // Estado para el índice de la imagen actual
-    const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual de productos
-    const [totalPages, setTotalPages] = useState(1); // Estado para el total de páginas
-    const [crop, setCrop] = useState({ x: 0, y: 0 }); // Estado para la posición de recorte
-    const [zoom, setZoom] = useState(1); // Estado para el zoom de recorte
-    const [croppedImages, setCroppedImages] = useState([]); // Estado para los blobs de las imágenes recortadas
-    const [hoveredImage, setHoveredImage] = useState(null); // Estado para la imagen ampliada al pasar el mouse
-    const [deletedImages, setDeletedImages] = useState([]); // Estado para almacenar los IDs de imágenes eliminadas
-    const [search, setSearch] = useState(''); // Estado para la búsqueda de productos
-    const [filteredProducts, setFilteredProducts] = useState([]); // Estado para los productos filtrados
+    const [showModal, setShowModal] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [editingVariant, setEditingVariant] = useState(null);
+    const [images, setImages] = useState([]);
+    const [productImages, setProductImages] = useState([]);
+    const [variantImages, setVariantImages] = useState([]);
+    const [croppedAreas, setCroppedAreas] = useState([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedImages, setCroppedImages] = useState([]);
+    const [croppedVariantImages, setCroppedVariantImages] = useState([]);
+    const [hoveredImage, setHoveredImage] = useState(null);
+    const [deletedImages, setDeletedImages] = useState([]);
+    const [deletedVariantImages, setDeletedVariantImages] = useState([]);
+    const [search, setSearch] = useState('');
+    const [filteredProducts, setFilteredProducts] = useState([]);
+    const [attributeName, setAttributeName] = useState("");
+    const [attributeValue, setAttributeValue] = useState("");
+    const [selectedAttribute, setSelectedAttribute] = useState(null);
+    const [attributes, setAttributes] = useState([]);
+    const [sku, setSku] = useState("");
+    const [variantPrice, setVariantPrice] = useState("");
+    const [variantStock, setVariantStock] = useState("");
+    const [showAttributeForm, setShowAttributeForm] = useState(false);
+    const [showVariants, setShowVariants] = useState({}); // Estado para controlar la visibilidad de las variantes
+
 
     useEffect(() => {
-        actions.loadCategories(); // Carga las categorías al montar el componente
-        actions.loadSubcategories(); // Carga las subcategorías al montar el componente
-        loadProducts(currentPage); // Carga los productos de la página actual
+        actions.loadCategories();
+        actions.loadSubcategories();
+        actions.loadAttributes();
+        loadProducts(currentPage);
     }, [currentPage]);
 
     useEffect(() => {
@@ -45,77 +60,106 @@ const CreateProductForm = () => {
                 product.product_name.toLowerCase().includes(search.toLowerCase()) ||
                 product.product_category.toLowerCase().includes(search.toLowerCase()) ||
                 product.product_subcategory.toLowerCase().includes(search.toLowerCase())
-
             ));
         }
     }, [search, store.products.products]);
 
     const loadProducts = async (page) => {
         try {
-            const result = await actions.loadProducts(page); // Llama a la acción para cargar productos
-            // console.log(result)
+            const result = await actions.loadProducts(page);
             if (result && result.success) {
-                setTotalPages(result.data.pages); // Actualiza el total de páginas si la carga es exitosa
+                setTotalPages(result.data.pages);
             } else {
-                throw new Error('Failed to load products'); // Lanza un error si la carga falla
+                throw new Error('Failed to load products');
             }
         } catch (error) {
-            console.error('Error loading products:', error); // Muestra un error en la consola si falla la carga
+            console.error('Error loading products:', error);
         }
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value }); // Actualiza los datos del formulario en el estado
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleImageChange = (e) => {
-        const files = Array.from(e.target.files); // Convierte los archivos en un array
-        const imageUrls = files.map(file => URL.createObjectURL(file)); // Crea URLs para los archivos
-        setImages(imageUrls); // Actualiza el estado de las imágenes
-        setCroppedImages([]); // Reinicia las imágenes recortadas
-        setCurrentImageIndex(0); // Reinicia el índice de la imagen actual
+        const files = Array.from(e.target.files);
+        const imageUrls = files.map(file => URL.createObjectURL(file));
+        setImages(imageUrls);
+        setCroppedImages([]);
+        setCurrentImageIndex(0);
+    };
+
+    const handleVariantImageChange = (e) => {
+        const files = Array.from(e.target.files);
+        const imageUrls = files.map(file => URL.createObjectURL(file));
+        setVariantImages(imageUrls);
+        setCroppedVariantImages([]);
+        setCurrentImageIndex(0);
     };
 
     const handleCropComplete = (croppedAreaPercentage, croppedAreaPixels) => {
-        const newCroppedAreas = [...croppedAreas]; // Copia las áreas recortadas actuales
-        newCroppedAreas[currentImageIndex] = croppedAreaPixels; // Actualiza el área recortada de la imagen actual
-        setCroppedAreas(newCroppedAreas); // Actualiza el estado de las áreas recortadas
+        const newCroppedAreas = [...croppedAreas];
+        newCroppedAreas[currentImageIndex] = croppedAreaPixels;
+        setCroppedAreas(newCroppedAreas);
     };
 
     const handleCropChange = (newCrop) => {
-        setCrop(newCrop); // Actualiza la posición de recorte
+        setCrop(newCrop);
     };
 
     const handleZoomChange = (newZoom) => {
-        setZoom(newZoom); // Actualiza el zoom de recorte
+        setZoom(newZoom);
     };
 
     const handleCropAccept = async () => {
-        if (images[currentImageIndex] && croppedAreas[currentImageIndex]) {
-            const croppedImg = await getCroppedImg(images[currentImageIndex], croppedAreas[currentImageIndex]); // Obtiene la imagen recortada
-            const newCroppedImages = [...croppedImages]; // Copia las imágenes recortadas actuales
-            newCroppedImages[currentImageIndex] = croppedImg; // Actualiza la imagen recortada actual
-            setCroppedImages(newCroppedImages); // Actualiza el estado de las imágenes recortadas
-            setCurrentImageIndex(currentImageIndex + 1); // Pasa a la siguiente imagen
+        const targetImages = editingVariant ? variantImages : images; // Decide based on if you're editing a variant or not
+        const targetCroppedImages = editingVariant ? croppedVariantImages : croppedImages;
+        const setCroppedFunction = editingVariant ? setCroppedVariantImages : setCroppedImages;
+
+        if (targetImages[currentImageIndex] && croppedAreas[currentImageIndex]) {
+            try {
+                const croppedImg = await getCroppedImg(targetImages[currentImageIndex], croppedAreas[currentImageIndex]);
+                const newCroppedImages = [...targetCroppedImages, croppedImg];
+                setCroppedFunction(newCroppedImages);
+                if (currentImageIndex + 1 < targetImages.length) {
+                    setCurrentImageIndex(currentImageIndex + 1);
+                } else {
+                    // Reset or handle end of cropping
+                    setCurrentImageIndex(0);
+                    if (editingVariant) {
+                        setVariantImages([]); // or handle as needed
+                    } else {
+                        setImages([]); // or handle as needed
+                    }
+                }
+            } catch (error) {
+                console.error("Error cropping image:", error);
+            }
         }
     };
 
     const handleCropCancel = () => {
-        const newImages = [...images]; // Copia las imágenes actuales
-        newImages.splice(currentImageIndex, 1); // Elimina la imagen actual
-        setImages(newImages); // Actualiza el estado de las imágenes
-        setCroppedAreas([]); // Reinicia las áreas recortadas
-        setCroppedImages([]); // Reinicia las imágenes recortadas
-        setCurrentImageIndex(0); // Reinicia el índice de la imagen actual
+        const targetImages = editingVariant ? variantImages : images;
+        const setImagesFunction = editingVariant ? setVariantImages : setImages;
+
+        const newImages = targetImages.filter((_, index) => index !== currentImageIndex);
+        setImagesFunction(newImages);
+
+        if (currentImageIndex + 1 < targetImages.length) {
+            setCurrentImageIndex(currentImageIndex + 1);
+        } else {
+            setCurrentImageIndex(0);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name || !formData.price || !formData.stock) {
-            setModalMessage("Name, price, and stock are required."); // Muestra un mensaje si faltan campos obligatorios
-            setShowModal(true); // Muestra el modal
+            setModalMessage("Name, price, and stock are required.");
+            setShowModal(true);
             return;
         }
+
         const productData = {
             name: formData.name,
             description: formData.description,
@@ -128,18 +172,18 @@ const CreateProductForm = () => {
 
         try {
             const result = editingProduct
-                ? await actions.editProduct(editingProduct.product_id, productData) // Edita el producto si está en modo edición
-                : await actions.createProduct(productData); // Crea el producto si no está en modo edición
+                ? await actions.editProduct(editingProduct.product_id, productData)
+                : await actions.createProduct(productData);
 
             if (result && result.success) {
                 const createdProductId = editingProduct ? editingProduct.product_id : result.data.product;
 
                 for (const croppedImage of croppedImages) {
-                    await actions.uploadProductImage(createdProductId, croppedImage); // Sube las imágenes recortadas
+                    await actions.uploadProductImage(createdProductId, croppedImage);
                 }
 
                 for (const imageId of deletedImages) {
-                    await actions.deleteProductImage(imageId); // Elimina las imágenes seleccionadas para eliminación
+                    await actions.deleteProductImage(imageId);
                 }
 
                 setModalMessage(editingProduct ? "Product edited successfully" : "Product created successfully");
@@ -167,9 +211,79 @@ const CreateProductForm = () => {
         }
     };
 
+    const handleVariantSubmit = async (e) => {
+        e.preventDefault();
+        if (!sku || !variantPrice || !variantStock) {
+            setModalMessage("SKU, price, and stock are required for variants.");
+            setShowModal(true);
+            return;
+        }
+
+        try {
+            // Crear valor del atributo si es necesario
+            let attribute_value_id;
+            if (attributeValue) {
+                const valueResponse = await actions.createAttributeValue(selectedAttribute, { value: attributeValue });
+                if (valueResponse.success) {
+                    attribute_value_id = valueResponse.data.value.attribute_value_id;
+                } else {
+                    setModalMessage(valueResponse.error);
+                    setShowModal(true);
+                    return;
+                }
+            }
+
+            const variantData = {
+                product_id: editingProduct.product_id,
+                sku,
+                price: parseFloat(variantPrice),
+                stock: parseInt(variantStock),
+                attributes: [
+                    {
+                        attribute_id: selectedAttribute,
+                        attribute_value_id
+                    }
+                ]
+            };
+
+            const result = editingVariant
+                ? await actions.editProductVariant(editingVariant.variant_id, variantData)
+                : await actions.createProductVariant(editingProduct.product_id, variantData);
+
+            if (result && result.success) {
+                const createdVariantId = editingVariant ? editingVariant.variant_id : result.data.variant;
+
+                for (const croppedImage of croppedVariantImages) {
+                    await actions.uploadVariantImage(createdVariantId, croppedImage);
+                }
+
+                for (const imageId of deletedVariantImages) {
+                    await actions.deleteVariantImage(imageId);
+                }
+
+                setModalMessage(editingVariant ? "Variant edited successfully" : "Variant created successfully");
+                actions.loadProductVariants(editingProduct.product_id);
+            } else {
+                setModalMessage(result ? result.error : "An unknown error occurred");
+            }
+            setShowModal(true);
+            setSku("");
+            setVariantPrice("");
+            setVariantStock("");
+            setAttributes([]);
+            setEditingVariant(null);
+            setVariantImages([]);
+            setCroppedVariantImages([]);
+            setDeletedVariantImages([]);
+        } catch (error) {
+            setModalMessage(`Error: ${error.message}`);
+            setShowModal(true);
+        }
+    };
+
     const handleCloseModal = () => {
-        setShowModal(false); // Cierra el modal
-        setModalMessage(""); // Reinicia el mensaje del modal
+        setShowModal(false);
+        setModalMessage("");
     };
 
     const handleEditProduct = (product) => {
@@ -186,12 +300,14 @@ const CreateProductForm = () => {
         setProductImages(product.product_images.map((url, index) => ({
             id: product.product_image_id[index],
             url: url
-        }))); // Carga las imágenes del producto en edición
+        })));
+
+        actions.loadProductVariants(product.product_id);
     };
 
     const handleDeleteProduct = async (productId) => {
         try {
-            const response = await actions.deleteProduct(productId); // Llama a la acción para eliminar el producto
+            const response = await actions.deleteProduct(productId);
             if (response && response.success) {
                 setModalMessage("Product successfully deleted");
                 loadProducts(currentPage);
@@ -208,56 +324,61 @@ const CreateProductForm = () => {
     // Funciones auxiliares para manejar el recorte de imagen
     const createImage = (url) => {
         return new Promise((resolve, reject) => {
-            const image = new window.Image(); // Crea un nuevo objeto de imagen
-            image.addEventListener('load', () => resolve(image)); // Resuelve la promesa cuando la imagen se carga
-            image.addEventListener('error', (error) => reject(error)); // Rechaza la promesa en caso de error
-            image.setAttribute('crossOrigin', 'anonymous'); // Evita problemas de CORS
-            image.src = url; // Asigna la URL de la imagen
+            const image = new window.Image();
+            image.addEventListener('load', () => resolve(image));
+            image.addEventListener('error', (error) => reject(error));
+            image.setAttribute('crossOrigin', 'anonymous');
+            image.src = url;
         });
     };
 
     const getRadianAngle = (degreeValue) => {
-        return (degreeValue * Math.PI) / 180; // Convierte grados a radianes
+        return (degreeValue * Math.PI) / 180;
     };
 
     const getCroppedImg = async (imageSrc, pixelCrop) => {
-        const image = await createImage(imageSrc); // Crea un objeto de imagen a partir de la URL
-        const canvas = document.createElement('canvas'); // Crea un elemento de canvas
-        const ctx = canvas.getContext('2d'); // Obtiene el contexto 2D del canvas
+        const image = await createImage(imageSrc);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
 
-        canvas.width = pixelCrop.width; // Establece el ancho del canvas
-        canvas.height = pixelCrop.height; // Establece el alto del canvas
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
 
         ctx.drawImage(
-            image,            // La imagen fuente que queremos recortar
-            pixelCrop.x,      // La coordenada x de la esquina superior izquierda del área de recorte en la imagen fuente
-            pixelCrop.y,      // La coordenada y de la esquina superior izquierda del área de recorte en la imagen fuente
-            pixelCrop.width,  // El ancho del área de recorte en la imagen fuente
-            pixelCrop.height, // El alto del área de recorte en la imagen fuente
-            0,                // La coordenada x de la esquina superior izquierda en el canvas donde queremos dibujar la imagen recortada
-            0,                // La coordenada y de la esquina superior izquierda en el canvas donde queremos dibujar la imagen recortada
-            pixelCrop.width,  // El ancho del área en el canvas donde queremos dibujar la imagen recortada
-            pixelCrop.height  // El alto del área en el canvas donde queremos dibujar la imagen recortada
-        ); // Dibuja la imagen recortada en el canvas
+            image,
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height,
+            0,
+            0,
+            pixelCrop.width,
+            pixelCrop.height
+        );
 
         return new Promise((resolve) => {
             canvas.toBlob((file) => {
-                resolve(file); // Resuelve la promesa con el blob de la imagen
+                resolve(file);
             }, 'image/jpeg');
         });
     };
 
     const handleMouseEnter = (image) => {
-        setHoveredImage(image); // Establece la imagen para mostrar ampliada
+        setHoveredImage(image);
     };
 
     const handleMouseLeave = () => {
-        setHoveredImage(null); // Elimina la imagen ampliada
+        setHoveredImage(null);
     };
 
     const handleImageDelete = (imageId) => {
-        setDeletedImages([...deletedImages, imageId]); // Agrega la imagen a eliminar al array
-        setProductImages(productImages.filter(image => image.id !== imageId)); // Elimina la imagen del estado
+        setDeletedImages([...deletedImages, imageId]);
+        setProductImages(productImages.filter(image => image.id !== imageId));
+    };
+
+    const handleVariantImageDelete = (imageId) => {
+        setDeletedVariantImages([...deletedVariantImages, imageId]);
+        setVariantImages(variantImages.filter(image => image.id !== imageId));
     };
 
     const toggleActiveStatus = () => {
@@ -265,7 +386,7 @@ const CreateProductForm = () => {
     };
 
     const handleCancelEdit = () => {
-        setEditingProduct(null); // Reinicia el estado de edición
+        setEditingProduct(null);
         setFormData({
             name: "",
             description: "",
@@ -280,6 +401,19 @@ const CreateProductForm = () => {
         setDeletedImages([]);
     };
 
+    const handleCancelEditVariant = () => {
+        setEditingVariant(null);
+        setSku("");
+        setVariantPrice("");
+        setVariantStock("");
+        setAttributes([]);
+        setVariantImages([]);
+        setCroppedVariantImages([]);
+        setDeletedVariantImages([]);
+        setCurrentImageIndex(0); // Asegurarse de resetear el índice de la imagen
+    };
+
+
     const downloadExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredProducts);
         const wb = XLSX.utils.book_new();
@@ -287,9 +421,108 @@ const CreateProductForm = () => {
         XLSX.writeFile(wb, 'Products.xlsx');
     };
 
+    const handleAddAttribute = async () => {
+        if (attributeName) {
+            const response = await actions.createAttribute({ name: attributeName });
+            setModalMessage(response.success ? "Attribute created successfully" : response.error);
+            setShowModal(true);
+            setAttributeName("");
+            actions.loadAttributes();
+        }
+    };
+
+    const handleAddAttributeValue = async () => {
+        if (selectedAttribute && attributeValue) {
+            const response = await actions.createAttributeValue(selectedAttribute, { value: attributeValue });
+            setModalMessage(response.success ? "Attribute value created successfully" : response.error);
+            setShowModal(true);
+            setAttributeValue("");
+            actions.loadAttributeValues(selectedAttribute);
+        }
+    };
+
+    const handleAttributeChange = (index, field, value) => {
+        const updatedAttributes = [...attributes];
+        updatedAttributes[index][field] = value;
+        setAttributes(updatedAttributes);
+    };
+
+    const handleEditVariant = (variant) => {
+        setSku(variant.sku);
+        setVariantPrice(variant.price);
+        setVariantStock(variant.stock);
+        setAttributes(variant.attributes);
+        setEditingVariant(variant);
+        setVariantImages(variant.images.map((url, index) => ({
+            id: variant.variant_image_id[index],
+            url: url
+        })));
+    };
+
+    const handleDeleteVariant = async (variantId) => {
+        try {
+            const response = await actions.deleteProductVariant(variantId);
+            if (response && response.success) {
+                setModalMessage("Variant successfully deleted");
+                actions.loadProductVariants(editingProduct.product_id);
+            } else {
+                setModalMessage(response ? response.error : "An unknown error occurred");
+            }
+            setShowModal(true);
+        } catch (error) {
+            setModalMessage(`Error deleting variant: ${error.message}`);
+            setShowModal(true);
+        }
+    };
+
+    const toggleVariantVisibility = async (productId) => {
+        setShowVariants(prevState => ({
+            ...prevState,
+            [productId]: !prevState[productId]
+        }));
+
+        if (!showVariants[productId]) {
+            await actions.loadProductVariants(productId);
+        }
+    };
+    const toggleAttributeForm = () => {
+        setShowAttributeForm(!showAttributeForm);
+    };
+
+    const renderTooltip = (message) => (
+        <Tooltip>
+            {message}
+        </Tooltip>
+    );
+
     return (
         <Container className={styles.formContainer}>
             <h1 className={styles.titleComponent}>Product Manager</h1>
+            <Button onClick={toggleAttributeForm} className={styles.button}>
+                <i className="fa-brands fa-product-hunt"></i> Crear nuevo Atributo
+            </Button>
+            {showAttributeForm && (
+                <Row className="mb-3">
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Ingrese el nombre del atributo. Ejemplo: Color, Tamaño, Material, Talla")}
+                            >
+                                <Form.Label className={styles.label}>Nombre del Atributo</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                type="text"
+                                placeholder="Nombre del Atributo"
+                                value={attributeName}
+                                onChange={(e) => setAttributeName(e.target.value)}
+                                className={styles.input}
+                            />
+                            <Button onClick={handleAddAttribute} className={styles.button}>Agregar Atributo</Button>
+                        </Form.Group>
+                    </Col>
+                </Row>
+            )}
             <Form onSubmit={handleSubmit}>
                 <Row className="mb-3">
                     <Col>
@@ -484,6 +717,251 @@ const CreateProductForm = () => {
                 )}
             </Form>
 
+            <div>
+                <h3>Variantes de producto</h3>
+                <Row className="mb-3">
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Ingrese el SKU de la variante del producto. Ejemplo: SHOE-BLK-42-CUERO-XXL")}
+                            >
+                                <Form.Label className={styles.label}>SKU</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                type="text"
+                                placeholder="SKU"
+                                value={sku}
+                                onChange={(e) => setSku(e.target.value)}
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    </Col>
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Ingrese el precio de la variante del producto")}
+                            >
+                                <Form.Label className={styles.label}>Precio de la Variante</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                type="number"
+                                placeholder="Precio"
+                                value={variantPrice}
+                                onChange={(e) => setVariantPrice(e.target.value)}
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    </Col>
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Ingrese el stock de la variante del producto")}
+                            >
+                                <Form.Label className={styles.label}>Stock de la Variante</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                type="number"
+                                placeholder="Stock"
+                                value={variantStock}
+                                onChange={(e) => setVariantStock(e.target.value)}
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    </Col>
+                    <Col>
+                        <Form.Group>
+                            <Form.Label className={styles.label}>Variant Images</Form.Label>
+                            <Form.Control
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleVariantImageChange}
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    </Col>
+                </Row>
+                <Row className="mb-3">
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Seleccione un atributo existente")}
+                            >
+                                <Form.Label className={styles.label}>Seleccionar Atributo</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                as="select"
+                                value={selectedAttribute}
+                                onChange={(e) => setSelectedAttribute(e.target.value)}
+                                className={styles.input}
+                            >
+                                <option value="">Seleccionar Atributo</option>
+                                {store.attributes.map(attr => (
+                                    <option key={attr.attribute_id} value={attr.attribute_id}>{attr.attribute_name}</option>
+                                ))}
+                            </Form.Control>
+                        </Form.Group>
+                    </Col>
+                    <Col>
+                        <Form.Group>
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={renderTooltip("Ingrese el valor del atributo. Ejemplo: Negro (para el atributo Color), 42 (para el atributo Tamaño), Cuero (para el atributo Material), xxl (para el atributo Talla)")}
+                            >
+                                <Form.Label className={styles.label}>Valor del Atributo</Form.Label>
+                            </OverlayTrigger>
+                            <Form.Control
+                                type="text"
+                                placeholder="Valor del Atributo"
+                                value={attributeValue}
+                                onChange={(e) => setAttributeValue(e.target.value)}
+                                className={styles.input}
+                            />
+                        </Form.Group>
+                    </Col>
+                </Row>
+                {variantImages.length > 0 && currentImageIndex < variantImages.length && (
+                    <>
+                        <Row className="mb-3">
+                            <Col>
+                                <div className={styles.cropContainer}>
+                                    <Cropper
+                                        image={variantImages[currentImageIndex]}
+                                        crop={crop}
+                                        zoom={zoom}
+                                        aspect={4 / 3}
+                                        onCropChange={handleCropChange}
+                                        onCropComplete={handleCropComplete}
+                                        onZoomChange={handleZoomChange}
+                                    />
+                                </div>
+                            </Col>
+                        </Row>
+                        <Row className="mb-3">
+                            <Col className="d-flex justify-content-center">
+                                <Button onClick={handleCropAccept} variant="success" className="mr-2">Accept</Button>
+                                <Button onClick={handleCropCancel} variant="danger">Cancel</Button>
+                            </Col>
+                        </Row>
+                    </>
+                )}
+                {croppedVariantImages.length > 0 && (
+                    <Row className="mb-3">
+                        <Col className="text-center">
+                            {croppedVariantImages.map((croppedImage, index) => (
+                                <img key={index} src={URL.createObjectURL(croppedImage)} alt={`Cropped ${index}`} className={styles.croppedImage} />
+                            ))}
+                        </Col>
+                    </Row>
+                )}
+                {editingVariant && variantImages.length > 0 && (
+                    <div className="edit-images-section">
+                        <h5>Variant Images</h5>
+                        <div className={styles.pillImageList}>
+                            {variantImages.map((image, index) => (
+                                <div key={index} className={styles.pillImageContainer}>
+                                    <Image
+                                        src={image.url}
+                                        thumbnail
+                                        className={styles.pillImage}
+                                        onMouseEnter={() => handleMouseEnter(image.url)}
+                                        onMouseLeave={handleMouseLeave}
+                                    />
+                                    <i
+                                        className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
+                                        onClick={() => handleVariantImageDelete(image.id)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {attributes.map((attr, index) => (
+                    <Form.Group key={index}>
+                        <Form.Label className={styles.label}>{attr.attribute_name}</Form.Label>
+                        <Form.Control
+                            type="text"
+                            placeholder="Valor del Atributo"
+                            value={attr.attribute_value}
+                            onChange={(e) => handleAttributeChange(index, 'attribute_value', e.target.value)}
+                            className={styles.input}
+                        />
+                    </Form.Group>
+                ))}
+
+                <Button onClick={handleVariantSubmit} className={styles.button}>
+                    {editingVariant ? 'Actualizar Variante' : 'Agregar Variante'}
+                </Button>
+                {editingVariant && (
+                    <Button variant="secondary" onClick={handleCancelEditVariant} className={styles.buttonCancelEdit}>
+                        Cancel Edit
+                    </Button>
+                )}
+                {editingProduct && (
+                    <Table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Atributos</th>
+                                <th>Imágenes</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {store.variants.map((variant, index) => (
+                                <tr key={index}>
+                                    <td>{variant.product_name}</td>
+                                    <td>{variant.sku}</td>
+                                    <td>{variant.price}</td>
+                                    <td>{variant.stock}</td>
+                                    <td>
+                                        {variant.attributes.map(attr => (
+                                            <span key={attr.attribute_id}>{attr.attribute_name}: {attr.attribute_value}, </span>
+                                        ))}
+                                    </td>
+                                    <td>
+                                        {variant.images && variant.images.map((image, index) => (
+                                            <Image
+                                                key={index}
+                                                src={image}
+                                                thumbnail
+                                                className={styles.pillImage}
+                                                onMouseEnter={() => handleMouseEnter(image)}
+                                                onMouseLeave={handleMouseLeave}
+                                            />
+                                        ))}
+                                    </td>
+                                    <td>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => handleEditVariant(variant)}
+                                            className={styles.editButton}
+                                        >
+                                            Editar
+                                        </Button>
+                                        <Button
+                                            variant="danger"
+                                            onClick={() => handleDeleteVariant(variant.variant_id)}
+                                            className={styles.deleteButton}
+                                        >
+                                            Eliminar
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
+                )}
+            </div>
+
             <div className="table-responsive">
                 <InputGroup>
                     <FormControl
@@ -502,58 +980,115 @@ const CreateProductForm = () => {
                             <th>Description</th>
                             <th>Price</th>
                             <th>Stock</th>
+                            <th>Variants</th> {/* Nueva columna para el botón de variantes */}
                             <th>Category</th>
                             <th>Subcategory</th>
                             <th>Images</th>
-                            <th>Status</th> {/* Nueva columna para el estado */}
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredProducts.map((product) => (
-                            <tr key={product.product_id} className={styles.tableRow}>
-                                <td>{product.product_name}</td>
-                                <td className={styles.tablecolumn}>{product.product_description}</td>
-                                <td>{product.product_price}</td>
-                                <td>{product.product_stock}</td>
-                                <td>{product.product_category}</td>
-                                <td>{product.product_subcategory}</td>
-                                <td>
-                                    {product.product_images && product.product_images.map((image, index) => (
-                                        <Image
-                                            key={index}
-                                            src={image}
-                                            thumbnail
-                                            className={styles.pillImage}
-                                            onMouseEnter={() => handleMouseEnter(image)}
-                                            onMouseLeave={handleMouseLeave}
-                                        />
-                                    ))}
-                                </td>
-                                <td>
-                                    {product.is_active ? (
-                                        <i className="fa-solid fa-power-off" style={{ color: 'green' }}></i>
-                                    ) : (
-                                        <i className="fa-solid fa-power-off" style={{ color: 'red' }}></i>
-                                    )}
-                                </td>
-                                <td>
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => handleEditProduct(product)}
-                                        className={styles.editButton}
-                                    >
-                                        Edit
-                                    </Button>
-                                    <Button
-                                        variant="danger"
-                                        onClick={() => handleDeleteProduct(product.product_id)}
-                                        className={styles.deleteButton}
-                                    >
-                                        Delete
-                                    </Button>
-                                </td>
-                            </tr>
+                            <React.Fragment key={product.product_id}>
+                                <tr className={styles.tableRow}>
+                                    <td>{product.product_name}</td>
+                                    <td className={styles.tablecolumn}>{product.product_description}</td>
+                                    <td>{product.product_price}</td>
+                                    <td>{product.product_stock}</td>
+                                    <td>
+                                        <Button
+                                            variant="link"
+                                            onClick={() => toggleVariantVisibility(product.product_id)}
+                                            className={styles.button}
+                                        >
+                                            {showVariants[product.product_id] ? <i className="fa-solid fa-eye-slash"></i> : <i className="fa-solid fa-eye"></i>}
+                                        </Button>
+                                    </td>
+                                    <td>{product.product_category}</td>
+                                    <td>{product.product_subcategory}</td>
+                                    <td>
+                                        {product.product_images && product.product_images.map((image, index) => (
+                                            <Image
+                                                key={index}
+                                                src={image}
+                                                thumbnail
+                                                className={styles.pillImage}
+                                                onMouseEnter={() => handleMouseEnter(image)}
+                                                onMouseLeave={handleMouseLeave}
+                                            />
+                                        ))}
+                                    </td>
+                                    <td>
+                                        {product.is_active ? (
+                                            <i className="fa-solid fa-power-off" style={{ color: 'green' }}></i>
+                                        ) : (
+                                            <i className="fa-solid fa-power-off" style={{ color: 'red' }}></i>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => handleEditProduct(product)}
+                                            className={styles.editButton}
+                                        >
+                                            Editar
+                                        </Button>
+                                        <Button
+                                            variant="danger"
+                                            onClick={() => handleDeleteProduct(product.product_id)}
+                                            className={styles.deleteButton}
+                                        >
+                                            Eliminar
+                                        </Button>
+                                    </td>
+                                </tr>
+                                {showVariants[product.product_id] && (
+                                    <tr>
+                                        <td colSpan="10">
+                                            <Table className={`${styles.table} ${styles.variantTable}`}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>SKU</th>
+                                                        <th>Precio</th>
+                                                        <th>Stock</th>
+                                                        <th>Atributos</th>
+                                                        <th>Imágenes</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {store.variants
+                                                        .filter(variant => variant.product_id === product.product_id)
+                                                        .map((variant, index) => (
+                                                            <tr key={index}>
+                                                                <td>{variant.sku}</td>
+                                                                <td>{variant.price}</td>
+                                                                <td>{variant.stock}</td>
+                                                                <td>
+                                                                    {variant.attributes.map(attr => (
+                                                                        <span key={attr.attribute_id}>{attr.attribute_name}: {attr.attribute_value}, </span>
+                                                                    ))}
+                                                                </td>
+                                                                <td>
+                                                                    {variant.images && variant.images.map((image, index) => (
+                                                                        <Image
+                                                                            key={index}
+                                                                            src={image}
+                                                                            thumbnail
+                                                                            className={styles.pillImage}
+                                                                            onMouseEnter={() => handleMouseEnter(image)}
+                                                                            onMouseLeave={handleMouseLeave}
+                                                                        />
+                                                                    ))}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                </tbody>
+                                            </Table>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </Table>

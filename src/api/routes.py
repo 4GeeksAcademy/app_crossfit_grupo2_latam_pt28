@@ -4,7 +4,7 @@ Este módulo se encarga de iniciar el servidor API, cargar la base de datos y ag
 
 import os
 from flask import Flask, request, jsonify, url_for, Blueprint, redirect, url_for, render_template, current_app  # Importación de Flask y funciones relacionadas
-from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient, Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail, Promotion, ProductPromotion,SubCategory  # Importación de los modelos de la base de datos
+from api.models import db, User, SecurityQuestion, Role, Permission, RolePermission, Membership, Training_classes, Booking, Payment, PaymentDetail, UserMembershipHistory, MovementImages, ProfileImage, PRRecord, MessagesSend, MessageRecipient, Product, Category, ProductImage, CartItem, Order, OrderDetail, EcommercePayment, EcommercePaymentDetail, Promotion, ProductPromotion,SubCategory, Attribute, AttributeValue,ProductVariant, VariantAttribute, VariantImage    # Importación de los modelos de la base de datos
 from api.utils import generate_sitemap, APIException  # Importación de funciones de utilidad y excepciones personalizadas
 from flask_cors import CORS  # Importación de CORS para permitir solicitudes desde otros dominios
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity  # Importación de JWT para autenticación y autorización basada en tokens
@@ -1996,7 +1996,6 @@ Crear Producto
 @jwt_required()
 def create_product():
     data = request.get_json()
-    print(data)
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
@@ -2007,6 +2006,7 @@ def create_product():
     stock = data.get('stock', 0)
     subcategory_id = data.get('subcategory_id')
     is_active = data.get('is_active', True)
+    variants = data.get('variants', [])
 
     # Validación de tipo y formato
     if not isinstance(name, str) or not name.strip():
@@ -2017,8 +2017,8 @@ def create_product():
         return jsonify({'error': 'Invalid price'}), 400
     if not isinstance(stock, int) or stock < 0:
         return jsonify({'error': 'Invalid stock'}), 400
-    # if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
-    #     return jsonify({'error': 'Invalid subcategory ID'}), 400
+    if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
+        return jsonify({'error': 'Invalid subcategory ID'}), 400
 
     try:
         new_product = Product(
@@ -2031,12 +2031,38 @@ def create_product():
             is_active=is_active
         )
         db.session.add(new_product)
+        db.session.flush()
+
+        total_variant_stock = 0
+        for variant in variants:
+            new_variant = ProductVariant(
+                product_id=new_product.id,
+                sku=variant.get('sku', ''),
+                price=variant.get('price', 0.0),
+                stock=variant.get('stock', 0)
+            )
+            total_variant_stock += variant.get('stock', 0)
+            db.session.add(new_variant)
+            db.session.flush()
+
+            for attribute in variant.get('attributes', []):
+                new_variant_attribute = VariantAttribute(
+                    variant_id=new_variant.id,
+                    attribute_id=attribute.get('attribute_id'),
+                    attribute_value_id=attribute.get('attribute_value_id')
+                )
+                db.session.add(new_variant_attribute)
+
+        if total_variant_stock > stock:
+            db.session.rollback()
+            return jsonify({'error': 'Total variant stock exceeds product stock'}), 400
+
         db.session.commit()
+        return jsonify({'message': 'Product created successfully', 'product': new_product.id}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-    return jsonify({'message': 'Product created successfully', 'product': new_product.id}), 201
 
 
 """
@@ -2078,7 +2104,7 @@ def update_product(product_id):
         if price is not None:
             product.price = price
         if stock is not None:
-            product.stock = stock
+            product.stock = stock  # Fix: Ensure stock is set correctly
         if is_active is not None:
             product.is_active = is_active
         db.session.commit()
@@ -2086,6 +2112,7 @@ def update_product(product_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 
 
@@ -2660,3 +2687,176 @@ def delete_product_image(image_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+
+@api.route('/upload_variant_image/<int:variant_id>', methods=['POST'])
+@jwt_required()
+def upload_variant_image(variant_id):
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        if file.filename == '' or not allowed_file(file.filename):
+            return jsonify({'error': 'No selected file or invalid file type'}), 400
+
+        variant = ProductVariant.query.get(variant_id)
+        if not variant:
+            return jsonify({'error': 'Variant not found'}), 404
+
+        # Optimizar la imagen
+        optimized_image_data = optimize_image(file)
+
+        # Aquí guardarías optimized_image_data en la base de datos
+        new_image = VariantImage(variant_id=variant.id, image_data=optimized_image_data)
+        db.session.add(new_image)
+        db.session.commit()
+        return jsonify({'message': 'Variant image uploaded successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/delete_variant_image/<int:image_id>', methods=['DELETE'])
+@jwt_required()
+def delete_variant_image(image_id):
+    try:
+        image = VariantImage.query.get(image_id)
+        if not image:
+            return jsonify({'error': 'Image not found'}), 404
+
+        db.session.delete(image)
+        db.session.commit()
+        return jsonify({'message': 'Variant image deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+#-------------------------------------------------crear atributos del producto------------------------------------------------------------------------------------
+
+# Crear atributo
+@api.route('/attributes', methods=['POST'])
+@jwt_required()
+def create_attribute():
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({'error': 'No data or name provided'}), 400
+
+    new_attribute = Attribute(name=data['name'])
+    try:
+        db.session.add(new_attribute)
+        db.session.commit()
+        return jsonify({'message': 'Attribute created successfully', 'attribute': new_attribute.serialize()}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+# Crear valor de atributo
+@api.route('/attributes/<int:attribute_id>/values', methods=['POST'])
+@jwt_required()
+def create_attribute_value(attribute_id):
+    data = request.get_json()
+    if not data or 'value' not in data:
+        return jsonify({'error': 'No data or value provided'}), 400
+
+    new_value = AttributeValue(attribute_id=attribute_id, value=data['value'])
+    try:
+        db.session.add(new_value)
+        db.session.commit()
+        return jsonify({'message': 'Attribute value created successfully', 'value': new_value.serialize()}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+# Crear variante de producto
+@api.route('/api/products/<int:product_id>/variants', methods=['POST'])
+@jwt_required()
+def create_product_variant(product_id):
+    data = request.get_json()
+    if not data or 'sku' not in data or 'price' not in data or 'stock' not in data:
+        return jsonify({'error': 'No data or required fields provided'}), 400
+
+    new_variant = ProductVariant(
+        product_id=product_id,
+        sku=data['sku'],
+        price=data['price'],
+        stock=data['stock']
+    )
+    try:
+        db.session.add(new_variant)
+        db.session.flush()
+
+        for attr in data.get('attributes', []):
+            new_attr = VariantAttribute(
+                variant_id=new_variant.id,
+                attribute_id=attr['attribute_id'],
+                attribute_value_id=attr['attribute_value_id']
+            )
+            db.session.add(new_attr)
+
+        db.session.commit()
+        return jsonify({'message': 'Product variant created successfully', 'variant': new_variant.serialize()}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+
+
+# Obtener atributos
+@api.route('/attributes', methods=['GET'])
+@jwt_required()
+def get_attributes():
+    attributes = Attribute.query.all()
+    return jsonify([attr.serialize() for attr in attributes]), 200
+
+# Obtener valores de atributo
+@api.route('/attributes/<int:attribute_id>/values', methods=['GET'])
+@jwt_required()
+def get_attribute_values(attribute_id):
+    values = AttributeValue.query.filter_by(attribute_id=attribute_id).all()
+    return jsonify([val.serialize() for val in values]), 200
+
+# Obtener variantes de producto
+@api.route('/api/products/<int:product_id>/variants', methods=['GET'])
+@jwt_required()
+def get_product_variants(product_id):
+    variants = ProductVariant.query.filter_by(product_id=product_id).all()
+    return jsonify([var.serialize() for var in variants]), 200
+
+# Actualizar variante de producto
+@api.route('/products/variants/<int:variant_id>', methods=['PUT'])
+@jwt_required()
+def update_product_variant(variant_id):
+    data = request.get_json()
+    variant = ProductVariant.query.get(variant_id)
+    if not variant:
+        return jsonify({'error': 'Variant not found'}), 404
+
+    sku = data.get('sku')
+    price = data.get('price')
+    stock = data.get('stock')
+
+    if sku:
+        variant.sku = sku
+    if price is not None:
+        variant.price = price
+    if stock is not None:
+        variant.stock = stock  # Fix: Ensure stock is set correctly
+
+    db.session.commit()
+    return jsonify({'message': 'Variant updated successfully'}), 200
+
+
+# Eliminar variante de producto
+@api.route('/products/variants/<int:variant_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product_variant(variant_id):
+    variant = ProductVariant.query.get(variant_id)
+    if not variant:
+        return jsonify({'error': 'Variant not found'}), 404
+
+    db.session.delete(variant)
+    db.session.commit()
+    return jsonify({'message': 'Variant deleted successfully'}), 200
