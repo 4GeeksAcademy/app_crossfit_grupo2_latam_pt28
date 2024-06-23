@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Context } from "../../store/appContext";
 import styles from "./CreateProductForm.module.css";
-import { Button, Form, Container, Row, Col, Modal, Table, Image, InputGroup, FormControl, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, Container, Row, Col, Modal, Table, Image, InputGroup, FormControl, OverlayTrigger, Tooltip, Card } from 'react-bootstrap';
 import Cropper from 'react-easy-crop';
 import * as XLSX from 'xlsx';
 
@@ -9,10 +9,10 @@ const CreateProductForm = () => {
     const { actions, store } = useContext(Context);
     const [formData, setFormData] = useState({
         name: "",
+        brand: "",
         description: "",
         purchase_price: "",
         price: "",
-        stock: "",
         subcategory_id: "",
         is_active: true,
     });
@@ -44,8 +44,9 @@ const CreateProductForm = () => {
     const [variantPrice, setVariantPrice] = useState("");
     const [variantStock, setVariantStock] = useState("");
     const [showAttributeForm, setShowAttributeForm] = useState(false);
-    const [showVariants, setShowVariants] = useState({}); // Estado para controlar la visibilidad de las variantes
-
+    const [showAttributeList, setShowAttributeList] = useState(false);
+    const [showVariants, setShowVariants] = useState({});
+    const [editingAttribute, setEditingAttribute] = useState(null);
 
     useEffect(() => {
         actions.loadCategories();
@@ -112,7 +113,7 @@ const CreateProductForm = () => {
     };
 
     const handleCropAccept = async () => {
-        const targetImages = editingVariant ? variantImages : images; // Decide based on if you're editing a variant or not
+        const targetImages = editingVariant ? variantImages : images;
         const targetCroppedImages = editingVariant ? croppedVariantImages : croppedImages;
         const setCroppedFunction = editingVariant ? setCroppedVariantImages : setCroppedImages;
 
@@ -124,12 +125,11 @@ const CreateProductForm = () => {
                 if (currentImageIndex + 1 < targetImages.length) {
                     setCurrentImageIndex(currentImageIndex + 1);
                 } else {
-                    // Reset or handle end of cropping
                     setCurrentImageIndex(0);
                     if (editingVariant) {
-                        setVariantImages([]); // or handle as needed
+                        setVariantImages([]);
                     } else {
-                        setImages([]); // or handle as needed
+                        setImages([]);
                     }
                 }
             } catch (error) {
@@ -154,18 +154,18 @@ const CreateProductForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.price || !formData.stock) {
-            setModalMessage("Name, price, and stock are required.");
+        if (!formData.name || !formData.price) {
+            setModalMessage("Name and price are required.");
             setShowModal(true);
             return;
         }
 
         const productData = {
             name: formData.name,
+            brand: formData.brand,
             description: formData.description,
             purchase_price: parseFloat(formData.purchase_price),
             price: parseFloat(formData.price),
-            stock: parseInt(formData.stock),
             subcategory_id: formData.subcategory_id,
             is_active: formData.is_active,
         };
@@ -194,10 +194,10 @@ const CreateProductForm = () => {
             setShowModal(true);
             setFormData({
                 name: "",
+                brand: "",
                 description: "",
                 purchase_price: "",
                 price: "",
-                stock: "",
                 subcategory_id: "",
                 is_active: true,
             });
@@ -220,16 +220,20 @@ const CreateProductForm = () => {
         }
 
         try {
-            // Crear valor del atributo si es necesario
-            let attribute_value_id;
-            if (attributeValue) {
-                const valueResponse = await actions.createAttributeValue(selectedAttribute, { value: attributeValue });
-                if (valueResponse.success) {
-                    attribute_value_id = valueResponse.data.value.attribute_value_id;
-                } else {
-                    setModalMessage(valueResponse.error);
-                    setShowModal(true);
-                    return;
+            const validAttributes = [];
+            for (const attr of attributes) {
+                if (attr.attribute_id && attr.attribute_value) {
+                    const valueResponse = await actions.createAttributeValue(attr.attribute_id, { value: attr.attribute_value });
+                    if (valueResponse.success) {
+                        validAttributes.push({
+                            attribute_id: attr.attribute_id,
+                            attribute_value_id: valueResponse.data.value.attribute_value_id
+                        });
+                    } else {
+                        setModalMessage(valueResponse.error);
+                        setShowModal(true);
+                        return;
+                    }
                 }
             }
 
@@ -238,12 +242,7 @@ const CreateProductForm = () => {
                 sku,
                 price: parseFloat(variantPrice),
                 stock: parseInt(variantStock),
-                attributes: [
-                    {
-                        attribute_id: selectedAttribute,
-                        attribute_value_id
-                    }
-                ]
+                attributes: validAttributes
             };
 
             const result = editingVariant
@@ -281,6 +280,7 @@ const CreateProductForm = () => {
         }
     };
 
+
     const handleCloseModal = () => {
         setShowModal(false);
         setModalMessage("");
@@ -289,10 +289,10 @@ const CreateProductForm = () => {
     const handleEditProduct = (product) => {
         setFormData({
             name: product.product_name,
+            brand: product.product_brand,
             description: product.product_description,
             purchase_price: product.product_purchase_price,
             price: product.product_price,
-            stock: product.product_stock,
             subcategory_id: product.subcategory_id,
             is_active: product.is_active,
         });
@@ -321,7 +321,6 @@ const CreateProductForm = () => {
         }
     };
 
-    // Funciones auxiliares para manejar el recorte de imagen
     const createImage = (url) => {
         return new Promise((resolve, reject) => {
             const image = new window.Image();
@@ -389,10 +388,10 @@ const CreateProductForm = () => {
         setEditingProduct(null);
         setFormData({
             name: "",
+            brand: "",
             description: "",
             purchase_price: "",
             price: "",
-            stock: "",
             subcategory_id: "",
             is_active: true,
         });
@@ -410,9 +409,8 @@ const CreateProductForm = () => {
         setVariantImages([]);
         setCroppedVariantImages([]);
         setDeletedVariantImages([]);
-        setCurrentImageIndex(0); // Asegurarse de resetear el índice de la imagen
+        setCurrentImageIndex(0);
     };
-
 
     const downloadExcel = () => {
         const ws = XLSX.utils.json_to_sheet(filteredProducts);
@@ -451,7 +449,10 @@ const CreateProductForm = () => {
         setSku(variant.sku);
         setVariantPrice(variant.price);
         setVariantStock(variant.stock);
-        setAttributes(variant.attributes);
+        setAttributes(variant.attributes.map(attr => ({
+            attribute_id: attr.attribute_id,
+            attribute_value: attr.attribute_value
+        })));
         setEditingVariant(variant);
         setVariantImages(variant.images.map((url, index) => ({
             id: variant.variant_image_id[index],
@@ -485,8 +486,45 @@ const CreateProductForm = () => {
             await actions.loadProductVariants(productId);
         }
     };
+
     const toggleAttributeForm = () => {
         setShowAttributeForm(!showAttributeForm);
+    };
+
+    const handleEditAttribute = (attribute) => {
+        setEditingAttribute(attribute);
+        setAttributeName(attribute.attribute_name);
+    };
+
+    const handleDeleteAttribute = async (attributeId) => {
+        try {
+            const response = await actions.deleteAttribute(attributeId);
+            if (response && response.success) {
+                setModalMessage("Attribute successfully deleted");
+                actions.loadAttributes();
+            } else {
+                setModalMessage(response ? response.error : "An unknown error occurred");
+            }
+            setShowModal(true);
+        } catch (error) {
+            setModalMessage(`Error deleting attribute: ${error.message}`);
+            setShowModal(true);
+        }
+    };
+
+    const handleAttributeUpdate = async () => {
+        if (editingAttribute) {
+            const response = await actions.updateAttribute(editingAttribute.attribute_id, { name: attributeName });
+            setModalMessage(response.success ? "Attribute updated successfully" : response.error);
+            setShowModal(true);
+            setEditingAttribute(null);
+            setAttributeName("");
+            actions.loadAttributes();
+        }
+    };
+
+    const addNewAttributeField = () => {
+        setAttributes([...attributes, { attribute_id: '', attribute_value: '' }]);
     };
 
     const renderTooltip = (message) => (
@@ -499,17 +537,20 @@ const CreateProductForm = () => {
         <Container className={styles.formContainer}>
             <h1 className={styles.titleComponent}>Product Manager</h1>
             <Button onClick={toggleAttributeForm} className={styles.button}>
-                <i className="fa-brands fa-product-hunt"></i> Crear nuevo Atributo
+                <i className="fa-brands fa-product-hunt"></i> Crear, editar Atributo
             </Button>
             {showAttributeForm && (
-                <Row className="mb-3">
-                    <Col>
+                <Card className="mb-3">
+                    <Card.Body>
                         <Form.Group>
                             <OverlayTrigger
                                 placement="top"
                                 overlay={renderTooltip("Ingrese el nombre del atributo. Ejemplo: Color, Tamaño, Material, Talla")}
                             >
-                                <Form.Label className={styles.label}>Nombre del Atributo</Form.Label>
+                                <Form.Label className={styles.label}>
+                                    Nombre del Atributo
+                                    <i className="fa-solid fa-list" style={{ marginLeft: '10px', cursor: 'pointer' }} onClick={() => setShowAttributeList(!showAttributeList)}></i>
+                                </Form.Label>
                             </OverlayTrigger>
                             <Form.Control
                                 type="text"
@@ -518,452 +559,475 @@ const CreateProductForm = () => {
                                 onChange={(e) => setAttributeName(e.target.value)}
                                 className={styles.input}
                             />
-                            <Button onClick={handleAddAttribute} className={styles.button}>Agregar Atributo</Button>
+                            <Button onClick={editingAttribute ? handleAttributeUpdate : handleAddAttribute} className={styles.button}>
+                                {editingAttribute ? 'Actualizar Atributo' : 'Agregar Atributo'}
+                            </Button>
+                            {showAttributeList && (
+                                <ul className={styles.attributeList}>
+                                    {store.attributes.map((attr) => (
+                                        <li key={attr.attribute_id} className={styles.attributeItem}>
+                                            {attr.attribute_name}
+                                            <i
+                                                className="fa-solid fa-pen"
+                                                style={{ marginLeft: '10px', cursor: 'pointer' }}
+                                                onClick={() => handleEditAttribute(attr)}
+                                                title="editar atributo"
+                                            ></i>
+                                            <i
+                                                className="fa-regular fa-trash-can"
+                                                style={{ marginLeft: '10px', cursor: 'pointer' }}
+                                                onClick={() => handleDeleteAttribute(attr.attribute_id)}
+                                                title="eliminar atributo"
+                                            ></i>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </Form.Group>
-                    </Col>
-                </Row>
+                    </Card.Body>
+                </Card>
             )}
-            <Form onSubmit={handleSubmit}>
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Product Name</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Description</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Description"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleChange}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Purchase Price</Form.Label>
-                            <Form.Control
-                                type="number"
-                                placeholder="Purchase Price"
-                                name="purchase_price"
-                                value={formData.purchase_price}
-                                onChange={handleChange}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Price</Form.Label>
-                            <Form.Control
-                                type="number"
-                                placeholder="Price"
-                                name="price"
-                                value={formData.price}
-                                onChange={handleChange}
-                                required
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Stock</Form.Label>
-                            <Form.Control
-                                type="number"
-                                placeholder="Stock"
-                                name="stock"
-                                value={formData.stock}
-                                onChange={handleChange}
-                                required
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Subcategory</Form.Label>
-                            <Form.Control
-                                as="select"
-                                name="subcategory_id"
-                                value={formData.subcategory_id}
-                                onChange={handleChange}
-                                className={styles.input}
-                            >
-                                <option value="">Select Subcategory</option>
-                                {store.categories && store.categories.map(category => (
-                                    <optgroup key={category.category_id} label={category.category_name}>
-                                        {store.subcategories
-                                            .filter(sub => sub.category_id === category.category_id)
-                                            .map(sub => (
-                                                <option key={sub.subcategory_id} value={sub.subcategory_id}>
-                                                    {sub.subcategory_name}
-                                                </option>
-                                            ))}
-                                    </optgroup>
-                                ))}
-                            </Form.Control>
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Product Images</Form.Label>
-                            <Form.Control
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageChange}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                </Row>
-                {images.length > 0 && currentImageIndex < images.length && (
-                    <>
+            <Card className="mb-3">
+                <Card.Body>
+                    <Form onSubmit={handleSubmit}>
                         <Row className="mb-3">
-                            <Col>
-                                <div className={styles.cropContainer}>
-                                    <Cropper
-                                        image={images[currentImageIndex]}
-                                        crop={crop}
-                                        zoom={zoom}
-                                        aspect={4 / 3}
-                                        onCropChange={handleCropChange}
-                                        onCropComplete={handleCropComplete}
-                                        onZoomChange={handleZoomChange}
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Product Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Name"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        required
+                                        className={styles.input}
                                     />
-                                </div>
+                                </Form.Group>
                             </Col>
-                        </Row>
-                        <Row className="mb-3">
-                            <Col className="d-flex justify-content-center">
-                                <Button onClick={handleCropAccept} variant="success" className="mr-2">Accept</Button>
-                                <Button onClick={handleCropCancel} variant="danger">Cancel</Button>
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Product Brand</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Brand"
+                                        name="brand"
+                                        value={formData.brand}
+                                        onChange={handleChange}
+                                        required
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
                             </Col>
-                        </Row>
-                    </>
-                )}
-                {croppedImages.length > 0 && (
-                    <Row className="mb-3">
-                        <Col className="text-center">
-                            {croppedImages.map((croppedImage, index) => (
-                                <img key={index} src={URL.createObjectURL(croppedImage)} alt={`Cropped ${index}`} className={styles.croppedImage} />
-                            ))}
-                        </Col>
-                    </Row>
-                )}
-                {editingProduct && (
-                    <Row className="mb-3">
-                        <Col>
-                            <Form.Group>
-                                <Form.Label className={styles.label}>Product Status</Form.Label>
-                                <div onClick={toggleActiveStatus} style={{ cursor: 'pointer' }}>
-                                    {formData.is_active ? (
-                                        <i className="fa-solid fa-toggle-on" style={{ color: 'green', fontSize: '24px' }}></i>
-                                    ) : (
-                                        <i className="fa-solid fa-toggle-off" style={{ color: 'red', fontSize: '24px' }}></i>
-                                    )}
-                                </div>
-                            </Form.Group>
-                        </Col>
-                    </Row>
-                )}
-                {editingProduct && productImages.length > 0 && (
-                    <div className="edit-images-section">
-                        <h5>Product Images</h5>
-                        <div className={styles.pillImageList}>
-                            {productImages.map((image, index) => (
-                                <div key={index} className={styles.pillImageContainer}>
-                                    <Image
-                                        src={image.url}
-                                        thumbnail
-                                        className={styles.pillImage}
-                                        onMouseEnter={() => handleMouseEnter(image.url)}
-                                        onMouseLeave={handleMouseLeave}
-                                    />
-                                    <i
-                                        className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
-                                        onClick={() => handleImageDelete(image.id)}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                <Button variant="primary" type="submit" className={styles.button}>
-                    {editingProduct ? 'Edit Product' : 'Create Product'}
-                </Button>
-                {editingProduct && (
-                    <Button variant="secondary" onClick={handleCancelEdit} className={styles.buttonCancelEdit}>
-                        Cancel Edit
-                    </Button>
-                )}
-            </Form>
 
-            <div>
-                <h3>Variantes de producto</h3>
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Group>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={renderTooltip("Ingrese el SKU de la variante del producto. Ejemplo: SHOE-BLK-42-CUERO-XXL")}
-                            >
-                                <Form.Label className={styles.label}>SKU</Form.Label>
-                            </OverlayTrigger>
-                            <Form.Control
-                                type="text"
-                                placeholder="SKU"
-                                value={sku}
-                                onChange={(e) => setSku(e.target.value)}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={renderTooltip("Ingrese el precio de la variante del producto")}
-                            >
-                                <Form.Label className={styles.label}>Precio de la Variante</Form.Label>
-                            </OverlayTrigger>
-                            <Form.Control
-                                type="number"
-                                placeholder="Precio"
-                                value={variantPrice}
-                                onChange={(e) => setVariantPrice(e.target.value)}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={renderTooltip("Ingrese el stock de la variante del producto")}
-                            >
-                                <Form.Label className={styles.label}>Stock de la Variante</Form.Label>
-                            </OverlayTrigger>
-                            <Form.Control
-                                type="number"
-                                placeholder="Stock"
-                                value={variantStock}
-                                onChange={(e) => setVariantStock(e.target.value)}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label className={styles.label}>Variant Images</Form.Label>
-                            <Form.Control
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleVariantImageChange}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                </Row>
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Group>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={renderTooltip("Seleccione un atributo existente")}
-                            >
-                                <Form.Label className={styles.label}>Seleccionar Atributo</Form.Label>
-                            </OverlayTrigger>
-                            <Form.Control
-                                as="select"
-                                value={selectedAttribute}
-                                onChange={(e) => setSelectedAttribute(e.target.value)}
-                                className={styles.input}
-                            >
-                                <option value="">Seleccionar Atributo</option>
-                                {store.attributes.map(attr => (
-                                    <option key={attr.attribute_id} value={attr.attribute_id}>{attr.attribute_name}</option>
-                                ))}
-                            </Form.Control>
-                        </Form.Group>
-                    </Col>
-                    <Col>
-                        <Form.Group>
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={renderTooltip("Ingrese el valor del atributo. Ejemplo: Negro (para el atributo Color), 42 (para el atributo Tamaño), Cuero (para el atributo Material), xxl (para el atributo Talla)")}
-                            >
-                                <Form.Label className={styles.label}>Valor del Atributo</Form.Label>
-                            </OverlayTrigger>
-                            <Form.Control
-                                type="text"
-                                placeholder="Valor del Atributo"
-                                value={attributeValue}
-                                onChange={(e) => setAttributeValue(e.target.value)}
-                                className={styles.input}
-                            />
-                        </Form.Group>
-                    </Col>
-                </Row>
-                {variantImages.length > 0 && currentImageIndex < variantImages.length && (
-                    <>
-                        <Row className="mb-3">
-                            <Col>
-                                <div className={styles.cropContainer}>
-                                    <Cropper
-                                        image={variantImages[currentImageIndex]}
-                                        crop={crop}
-                                        zoom={zoom}
-                                        aspect={4 / 3}
-                                        onCropChange={handleCropChange}
-                                        onCropComplete={handleCropComplete}
-                                        onZoomChange={handleZoomChange}
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Description</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Description"
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                        className={styles.input}
                                     />
-                                </div>
+                                </Form.Group>
                             </Col>
                         </Row>
                         <Row className="mb-3">
-                            <Col className="d-flex justify-content-center">
-                                <Button onClick={handleCropAccept} variant="success" className="mr-2">Accept</Button>
-                                <Button onClick={handleCropCancel} variant="danger">Cancel</Button>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Purchase Price</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        placeholder="Purchase Price"
+                                        name="purchase_price"
+                                        value={formData.purchase_price}
+                                        onChange={handleChange}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Price</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        placeholder="Price"
+                                        name="price"
+                                        value={formData.price}
+                                        onChange={handleChange}
+                                        required
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
                             </Col>
                         </Row>
-                    </>
-                )}
-                {croppedVariantImages.length > 0 && (
-                    <Row className="mb-3">
-                        <Col className="text-center">
-                            {croppedVariantImages.map((croppedImage, index) => (
-                                <img key={index} src={URL.createObjectURL(croppedImage)} alt={`Cropped ${index}`} className={styles.croppedImage} />
-                            ))}
-                        </Col>
-                    </Row>
-                )}
-                {editingVariant && variantImages.length > 0 && (
-                    <div className="edit-images-section">
-                        <h5>Variant Images</h5>
-                        <div className={styles.pillImageList}>
-                            {variantImages.map((image, index) => (
-                                <div key={index} className={styles.pillImageContainer}>
-                                    <Image
-                                        src={image.url}
-                                        thumbnail
-                                        className={styles.pillImage}
-                                        onMouseEnter={() => handleMouseEnter(image.url)}
-                                        onMouseLeave={handleMouseLeave}
-                                    />
-                                    <i
-                                        className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
-                                        onClick={() => handleVariantImageDelete(image.id)}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {attributes.map((attr, index) => (
-                    <Form.Group key={index}>
-                        <Form.Label className={styles.label}>{attr.attribute_name}</Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="Valor del Atributo"
-                            value={attr.attribute_value}
-                            onChange={(e) => handleAttributeChange(index, 'attribute_value', e.target.value)}
-                            className={styles.input}
-                        />
-                    </Form.Group>
-                ))}
-
-                <Button onClick={handleVariantSubmit} className={styles.button}>
-                    {editingVariant ? 'Actualizar Variante' : 'Agregar Variante'}
-                </Button>
-                {editingVariant && (
-                    <Button variant="secondary" onClick={handleCancelEditVariant} className={styles.buttonCancelEdit}>
-                        Cancel Edit
-                    </Button>
-                )}
-                {editingProduct && (
-                    <Table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Product Name</th>
-                                <th>SKU</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Atributos</th>
-                                <th>Imágenes</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {store.variants.map((variant, index) => (
-                                <tr key={index}>
-                                    <td>{variant.product_name}</td>
-                                    <td>{variant.sku}</td>
-                                    <td>{variant.price}</td>
-                                    <td>{variant.stock}</td>
-                                    <td>
-                                        {variant.attributes.map(attr => (
-                                            <span key={attr.attribute_id}>{attr.attribute_name}: {attr.attribute_value}, </span>
+                        <Row className="mb-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Subcategory</Form.Label>
+                                    <Form.Control
+                                        as="select"
+                                        name="subcategory_id"
+                                        value={formData.subcategory_id}
+                                        onChange={handleChange}
+                                        className={styles.input}
+                                    >
+                                        <option value="">Select Subcategory</option>
+                                        {store.categories && store.categories.map(category => (
+                                            <optgroup key={category.category_id} label={category.category_name}>
+                                                {store.subcategories
+                                                    .filter(sub => sub.category_id === category.category_id)
+                                                    .map(sub => (
+                                                        <option key={sub.subcategory_id} value={sub.subcategory_id}>
+                                                            {sub.subcategory_name}
+                                                        </option>
+                                                    ))}
+                                            </optgroup>
                                         ))}
-                                    </td>
-                                    <td>
-                                        {variant.images && variant.images.map((image, index) => (
+                                    </Form.Control>
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Product Images</Form.Label>
+                                    <Form.Control
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageChange}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        {images.length > 0 && currentImageIndex < images.length && (
+                            <>
+                                <Row className="mb-3">
+                                    <Col>
+                                        <div className={styles.cropContainer}>
+                                            <Cropper
+                                                image={images[currentImageIndex]}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={4 / 3}
+                                                onCropChange={handleCropChange}
+                                                onCropComplete={handleCropComplete}
+                                                onZoomChange={handleZoomChange}
+                                            />
+                                        </div>
+                                    </Col>
+                                </Row>
+                                <Row className="mb-3">
+                                    <Col className="d-flex justify-content-center">
+                                        <Button onClick={handleCropAccept} variant="success" className="mr-2">Accept</Button>
+                                        <Button onClick={handleCropCancel} variant="danger">Cancel</Button>
+                                    </Col>
+                                </Row>
+                            </>
+                        )}
+                        {croppedImages.length > 0 && (
+                            <Row className="mb-3">
+                                <Col className="text-center">
+                                    {croppedImages.map((croppedImage, index) => (
+                                        <img key={index} src={URL.createObjectURL(croppedImage)} alt={`Cropped ${index}`} className={styles.croppedImage} />
+                                    ))}
+                                </Col>
+                            </Row>
+                        )}
+                        {editingProduct && (
+                            <Row className="mb-3">
+                                <Col>
+                                    <Form.Group>
+                                        <Form.Label className={styles.label}>Product Status</Form.Label>
+                                        <div onClick={toggleActiveStatus} style={{ cursor: 'pointer' }}>
+                                            {formData.is_active ? (
+                                                <i className="fa-solid fa-toggle-on" style={{ color: 'green', fontSize: '24px' }}></i>
+                                            ) : (
+                                                <i className="fa-solid fa-toggle-off" style={{ color: 'red', fontSize: '24px' }}></i>
+                                            )}
+                                        </div>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        )}
+                        {editingProduct && productImages.length > 0 && (
+                            <div className="edit-images-section">
+                                <h5>Product Images</h5>
+                                <div className={styles.pillImageList}>
+                                    {productImages.map((image, index) => (
+                                        <div key={index} className={styles.pillImageContainer}>
                                             <Image
-                                                key={index}
-                                                src={image}
+                                                src={image.url}
                                                 thumbnail
                                                 className={styles.pillImage}
-                                                onMouseEnter={() => handleMouseEnter(image)}
+                                                onMouseEnter={() => handleMouseEnter(image.url)}
                                                 onMouseLeave={handleMouseLeave}
                                             />
-                                        ))}
-                                    </td>
-                                    <td>
-                                        <Button
-                                            variant="primary"
-                                            onClick={() => handleEditVariant(variant)}
-                                            className={styles.editButton}
+                                            <i
+                                                className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
+                                                onClick={() => handleImageDelete(image.id)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <Button variant="primary" type="submit" className={styles.button}>
+                            {editingProduct ? 'Edit Product' : 'Create Product'}
+                        </Button>
+                        {editingProduct && (
+                            <Button variant="secondary" onClick={handleCancelEdit} className={styles.buttonCancelEdit}>
+                                Cancel Edit
+                            </Button>
+                        )}
+                    </Form>
+                </Card.Body>
+            </Card>
+            <Card className="mb-3">
+                <Card.Body>
+                    <h3>Variantes de producto</h3>
+                    <Form onSubmit={handleVariantSubmit}>
+                        <Row className="mb-3">
+                            <Col md={4}>
+                                <Form.Group>
+                                    <OverlayTrigger
+                                        placement="top"
+                                        overlay={renderTooltip("Ingrese el SKU de la variante del producto. Ejemplo: SHOE-BLK-42-CUERO-XXL")}
+                                    >
+                                        <Form.Label className={styles.label}>SKU</Form.Label>
+                                    </OverlayTrigger>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="SKU"
+                                        value={sku}
+                                        onChange={(e) => setSku(e.target.value)}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <OverlayTrigger
+                                        placement="top"
+                                        overlay={renderTooltip("Ingrese el precio de la variante del producto")}
+                                    >
+                                        <Form.Label className={styles.label}>Precio de la Variante</Form.Label>
+                                    </OverlayTrigger>
+                                    <Form.Control
+                                        type="number"
+                                        placeholder="Precio"
+                                        value={variantPrice}
+                                        onChange={(e) => setVariantPrice(e.target.value)}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <OverlayTrigger
+                                        placement="top"
+                                        overlay={renderTooltip("Ingrese el stock de la variante del producto")}
+                                    >
+                                        <Form.Label className={styles.label}>Stock de la Variante</Form.Label>
+                                    </OverlayTrigger>
+                                    <Form.Control
+                                        type="number"
+                                        placeholder="Stock"
+                                        value={variantStock}
+                                        onChange={(e) => setVariantStock(e.target.value)}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        {attributes.map((attr, index) => (
+                            <Row key={index} className="mb-3">
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <OverlayTrigger
+                                            placement="top"
+                                            overlay={renderTooltip("Seleccione un atributo existente")}
                                         >
-                                            Editar
-                                        </Button>
-                                        <Button
-                                            variant="danger"
-                                            onClick={() => handleDeleteVariant(variant.variant_id)}
-                                            className={styles.deleteButton}
+                                            <Form.Label className={styles.label}>Seleccionar Atributo</Form.Label>
+                                        </OverlayTrigger>
+                                        <Form.Control
+                                            as="select"
+                                            value={attr.attribute_id}
+                                            onChange={(e) => handleAttributeChange(index, 'attribute_id', e.target.value)}
+                                            className={styles.input}
                                         >
-                                            Eliminar
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                )}
-            </div>
-
+                                            <option value="">Seleccionar Atributo</option>
+                                            {store.attributes.map(attr => (
+                                                <option key={attr.attribute_id} value={attr.attribute_id}>{attr.attribute_name}</option>
+                                            ))}
+                                        </Form.Control>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <OverlayTrigger
+                                            placement="top"
+                                            overlay={renderTooltip("Ingrese el valor del atributo. Ejemplo: Negro (para el atributo Color), 42 (para el atributo Tamaño), Cuero (para el atributo Material), xxl (para el atributo Talla)")}
+                                        >
+                                            <Form.Label className={styles.label}>Valor del Atributo</Form.Label>
+                                        </OverlayTrigger>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Valor del Atributo"
+                                            value={attr.attribute_value}
+                                            onChange={(e) => handleAttributeChange(index, 'attribute_value', e.target.value)}
+                                            className={styles.input}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        ))}
+                        <Button onClick={addNewAttributeField} className={styles.buttonAddAttribute}>
+                            <i className="fa-solid fa-circle-plus"></i> Añadir Atributo
+                        </Button>
+                        <Row className="mb-3">
+                            <Col>
+                                <Form.Group>
+                                    <Form.Label className={styles.label}>Variant Images</Form.Label>
+                                    <Form.Control
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleVariantImageChange}
+                                        className={styles.input}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        {variantImages.length > 0 && currentImageIndex < variantImages.length && (
+                            <>
+                                <Row className="mb-3">
+                                    <Col>
+                                        <div className={styles.cropContainer}>
+                                            <Cropper
+                                                image={variantImages[currentImageIndex]}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={4 / 3}
+                                                onCropChange={handleCropChange}
+                                                onCropComplete={handleCropComplete}
+                                                onZoomChange={handleZoomChange}
+                                            />
+                                        </div>
+                                    </Col>
+                                </Row>
+                                <Row className="mb-3">
+                                    <Col className="d-flex justify-content-center">
+                                        <Button onClick={handleCropAccept} variant="success" className="mr-2">Accept</Button>
+                                        <Button onClick={handleCropCancel} variant="danger">Cancel</Button>
+                                    </Col>
+                                </Row>
+                            </>
+                        )}
+                        {croppedVariantImages.length > 0 && (
+                            <Row className="mb-3">
+                                <Col className="text-center">
+                                    {croppedVariantImages.map((croppedImage, index) => (
+                                        <img key={index} src={URL.createObjectURL(croppedImage)} alt={`Cropped ${index}`} className={styles.croppedImage} />
+                                    ))}
+                                </Col>
+                            </Row>
+                        )}
+                        {editingVariant && variantImages.length > 0 && (
+                            <div className="edit-images-section">
+                                <h5>Variant Images</h5>
+                                <div className={styles.pillImageList}>
+                                    {variantImages.map((image, index) => (
+                                        <div key={index} className={styles.pillImageContainer}>
+                                            <Image
+                                                src={image.url}
+                                                thumbnail
+                                                className={styles.pillImage}
+                                                onMouseEnter={() => handleMouseEnter(image.url)}
+                                                onMouseLeave={handleMouseLeave}
+                                            />
+                                            <i
+                                                className={`fa-regular fa-trash-can ${styles.deleteIcon}`}
+                                                onClick={() => handleVariantImageDelete(image.id)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <Button variant="primary" type="submit" className={styles.button}>
+                            {editingVariant ? 'Actualizar Variante' : 'Agregar Variante'}
+                        </Button>
+                        {editingVariant && (
+                            <Button variant="secondary" onClick={handleCancelEditVariant} className={styles.buttonCancelEdit}>
+                                Cancel Edit
+                            </Button>
+                        )}
+                        {editingProduct && (
+                            <Table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>SKU</th>
+                                        <th>Precio</th>
+                                        <th>Stock</th>
+                                        <th>Atributos</th>
+                                        <th>Imágenes</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {store.variants.map((variant, index) => (
+                                        <tr key={index}>
+                                            <td>{variant.product_name}</td>
+                                            <td>{variant.sku}</td>
+                                            <td>{variant.price}</td>
+                                            <td>{variant.stock}</td>
+                                            <td>
+                                                {variant.attributes.map(attr => (
+                                                    <span key={attr.attribute_id}>{attr.attribute_name}: {attr.attribute_value}, </span>
+                                                ))}
+                                            </td>
+                                            <td>
+                                                {variant.images && variant.images.map((image, index) => (
+                                                    <Image
+                                                        key={index}
+                                                        src={image}
+                                                        thumbnail
+                                                        className={styles.pillImage}
+                                                        onMouseEnter={() => handleMouseEnter(image)}
+                                                        onMouseLeave={handleMouseLeave}
+                                                    />
+                                                ))}
+                                            </td>
+                                            <td>
+                                                <Button
+                                                    variant="primary"
+                                                    onClick={() => handleEditVariant(variant)}
+                                                    className={styles.editButton}
+                                                >
+                                                    Editar
+                                                </Button>
+                                                <Button
+                                                    variant="danger"
+                                                    onClick={() => handleDeleteVariant(variant.variant_id)}
+                                                    className={styles.deleteButton}
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        )}
+                    </Form>
+                </Card.Body>
+            </Card>
             <div className="table-responsive">
-                <InputGroup>
+                <InputGroup className="mb-3">
                     <FormControl
                         placeholder="Search by product name, category, subcategory"
                         value={search}
@@ -977,10 +1041,11 @@ const CreateProductForm = () => {
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Brand</th>
                             <th>Description</th>
                             <th>Price</th>
                             <th>Stock</th>
-                            <th>Variants</th> {/* Nueva columna para el botón de variantes */}
+                            <th>Variants</th>
                             <th>Category</th>
                             <th>Subcategory</th>
                             <th>Images</th>
@@ -993,6 +1058,7 @@ const CreateProductForm = () => {
                             <React.Fragment key={product.product_id}>
                                 <tr className={styles.tableRow}>
                                     <td>{product.product_name}</td>
+                                    <td>{product.product_brand}</td>
                                     <td className={styles.tablecolumn}>{product.product_description}</td>
                                     <td>{product.product_price}</td>
                                     <td>{product.product_stock}</td>
@@ -1081,6 +1147,7 @@ const CreateProductForm = () => {
                                                                         />
                                                                     ))}
                                                                 </td>
+
                                                             </tr>
                                                         ))}
                                                 </tbody>
@@ -1093,7 +1160,6 @@ const CreateProductForm = () => {
                     </tbody>
                 </Table>
             </div>
-
             <div className="pagination">
                 <Button
                     variant="secondary"

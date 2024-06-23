@@ -35,12 +35,14 @@
 }
 
 .button {
+    display: block;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin: 1px;
+    border-radius: 4px;
     background-color: var(--color-green);
     border: none;
-    margin-bottom: 5px;
     color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
     transition: background-color 0.3s;
 }
 
@@ -49,12 +51,14 @@
 }
 
 .editButton {
+    display: block;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin: 1px;
+    border-radius: 4px;
     background-color: #6c757d;
     border: none;
-    margin-left: 5px;
     color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
     transition: background-color 0.3s;
 }
 
@@ -63,12 +67,14 @@
 }
 
 .deleteButton {
-    background-color: var(--color-dark);
-    border: none;
-    margin-left: 5px;
-    color: white;
-    padding: 10px 20px;
+    display: block;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin: 1px;
     border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.569);
+    border: none;
+    color: white;
     transition: background-color 0.3s;
 }
 
@@ -77,12 +83,14 @@
 }
 
 .buttonCancelEdit {
-    background-color: #6c757d;
-    border: none;
-    margin-left: 5px;
-    color: white;
-    padding: 10px 20px;
+    display: block;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin: 1px;
     border-radius: 4px;
+    background-color: var(--color-green);
+    border: none;
+    color: white;
     transition: background-color 0.3s;
 }
 
@@ -188,11 +196,27 @@
     background-color: var(--color-green-dark);
 }
 
+.buttonAddAttribute {
+    display: block;
+    font-size: 14px;
+    padding: 5px 10px;
+    margin: 1px;
+    border-radius: 4px;
+    background-color: var(--color-green);
+    border: none;
+    color: white;
+    transition: background-color 0.3s;
+
+}
+
+.buttonAddAttribute:hover {
+    background-color: gray;
+}
+
 .cropContainer {
     position: relative;
     width: 100%;
     height: 400px;
-    /* Ajusta el tamaño según sea necesario */
     background: #333;
     margin-bottom: 20px;
 }
@@ -201,6 +225,10 @@
     max-width: 100%;
     max-height: 200px;
     margin-top: 10px;
+}
+
+.card {
+    margin-bottom: 20px;
 }
 
 /* Responsive styles for variant table */

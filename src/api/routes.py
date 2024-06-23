@@ -2000,10 +2000,10 @@ def create_product():
         return jsonify({'error': 'No data provided'}), 400
 
     name = data.get('name')
+    brand = data.get('brand')
     description = data.get('description', '')
     purchase_price = data.get('purchase_price', 0.0)
     price = data.get('price', 0.0)
-    stock = data.get('stock', 0)
     subcategory_id = data.get('subcategory_id')
     is_active = data.get('is_active', True)
     variants = data.get('variants', [])
@@ -2011,22 +2011,23 @@ def create_product():
     # Validación de tipo y formato
     if not isinstance(name, str) or not name.strip():
         return jsonify({'error': 'Invalid name'}), 400
+    if not isinstance(brand, str) or not brand.strip():
+        return jsonify({'error': 'Invalid brand'}), 400
     if not isinstance(purchase_price, (int, float)) or purchase_price < 0:
         return jsonify({'error': 'Invalid purchase_price'}), 400
     if not isinstance(price, (int, float)) or price < 0:
         return jsonify({'error': 'Invalid price'}), 400
-    if not isinstance(stock, int) or stock < 0:
-        return jsonify({'error': 'Invalid stock'}), 400
     if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
         return jsonify({'error': 'Invalid subcategory ID'}), 400
 
     try:
         new_product = Product(
             name=name.strip(),
+            brand=brand.strip(),
             description=description,
             purchase_price=purchase_price,
             price=price,
-            stock=stock,
+            stock=0,  # No se asigna stock directamente en la creación del producto
             subcategory_id=subcategory_id,
             is_active=is_active
         )
@@ -2053,15 +2054,13 @@ def create_product():
                 )
                 db.session.add(new_variant_attribute)
 
-        if total_variant_stock > stock:
-            db.session.rollback()
-            return jsonify({'error': 'Total variant stock exceeds product stock'}), 400
-
         db.session.commit()
         return jsonify({'message': 'Product created successfully', 'product': new_product.id}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
 
 
 
@@ -2080,38 +2079,49 @@ def update_product(product_id):
         return jsonify({'error': 'Product not found'}), 404
 
     name = data.get('name')
-    purchase_price = data.get('purchase_price')
-    price = data.get('price')
-    stock = data.get('stock')
-    is_active = data.get('is_active')
+    brand = data.get('brand')
+    description = data.get('description', '')
+    purchase_price = data.get('purchase_price', 0.0)
+    price = data.get('price', 0.0)
+    subcategory_id = data.get('subcategory_id')
+    is_active = data.get('is_active', True)
 
-    if name and not isinstance(name, str):
+    # Validación de tipo y formato
+    if not isinstance(name, str) or not name.strip():
         return jsonify({'error': 'Invalid name'}), 400
-    if purchase_price is not None and (not isinstance(purchase_price, (int, float)) or purchase_price < 0):
+    if not isinstance(brand, str) or not brand.strip():
+        return jsonify({'error': 'Invalid brand'}), 400
+    if not isinstance(purchase_price, (int, float)) or purchase_price < 0:
+        return jsonify({'error': 'Invalid purchase_price'}), 400
+    if not isinstance(price, (int, float)) or price < 0:
         return jsonify({'error': 'Invalid price'}), 400
-    if price is not None and (not isinstance(price, (int, float)) or price < 0):
-        return jsonify({'error': 'Invalid price'}), 400
-    if stock is not None and (not isinstance(stock, int) or stock < 0):
-        return jsonify({'error': 'Invalid stock'}), 400
-    if is_active is not None and not isinstance(is_active, bool):
-        return jsonify({'error': 'Invalid is_active value'}), 400
+    if subcategory_id and (not isinstance(subcategory_id, int) or subcategory_id <= 0):
+        return jsonify({'error': 'Invalid subcategory ID'}), 400
 
     try:
         if name:
             product.name = name.strip()
+        if brand:
+            product.brand = brand.strip()
+        if description:
+            product.description = description
         if purchase_price is not None:
             product.purchase_price = purchase_price
         if price is not None:
             product.price = price
-        if stock is not None:
-            product.stock = stock  # Fix: Ensure stock is set correctly
+        if subcategory_id is not None:
+            product.subcategory_id = subcategory_id
         if is_active is not None:
             product.is_active = is_active
+
+        # No actualizamos el stock aquí directamente
         db.session.commit()
+
         return jsonify({'message': 'Product updated successfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 
 
@@ -2857,6 +2867,55 @@ def delete_product_variant(variant_id):
     if not variant:
         return jsonify({'error': 'Variant not found'}), 404
 
-    db.session.delete(variant)
-    db.session.commit()
-    return jsonify({'message': 'Variant deleted successfully'}), 200
+    try:
+        # Eliminar atributos y valores asociados
+        variant_attributes = VariantAttribute.query.filter_by(variant_id=variant_id).all()
+        for attr in variant_attributes:
+            db.session.delete(attr)
+
+        # Eliminar imágenes asociadas
+        variant_images = VariantImage.query.filter_by(variant_id=variant_id).all()
+        for image in variant_images:
+            db.session.delete(image)
+
+        db.session.delete(variant)
+        db.session.commit()
+        return jsonify({'message': 'Variant and associated attributes and images deleted successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+@api.route('/attributes/<int:attribute_id>', methods=['PUT'])
+@jwt_required()
+def update_attribute(attribute_id):
+    data = request.get_json()
+    attribute = Attribute.query.get(attribute_id)
+    if not attribute:
+        return jsonify({'error': 'Attribute not found'}), 404
+
+    name = data.get('name')
+    if not name or not isinstance(name, str):
+        return jsonify({'error': 'Invalid name'}), 400
+
+    attribute.name = name.strip()
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Attribute updated successfully', 'attribute': attribute.serialize()}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+@api.route('/attributes/<int:attribute_id>', methods=['DELETE'])
+@jwt_required()
+def delete_attribute(attribute_id):
+    attribute = Attribute.query.get(attribute_id)
+    if not attribute:
+        return jsonify({'error': 'Attribute not found'}), 404
+
+    try:
+        db.session.delete(attribute)
+        db.session.commit()
+        return jsonify({'message': 'Attribute deleted successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500

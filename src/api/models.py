@@ -529,6 +529,7 @@ class Product(db.Model):
     product_creation_date = db.Column(db.DateTime, default=datetime.utcnow)
     product_modification_date = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), nullable=False)
+    brand = db.Column(db.String(255), nullable=True, default="")
     description = db.Column(db.Text, nullable=True)
     purchase_price = db.Column(db.Float, nullable=True)
     price = db.Column(db.Float, nullable=False)
@@ -542,6 +543,9 @@ class Product(db.Model):
 
     def __repr__(self):
         return '<Product %r>' % self.id
+    
+    def get_total_stock(self):
+        return self.stock + sum(variant.stock for variant in self.variants)
 
     def serialize(self):
         return {
@@ -550,6 +554,7 @@ class Product(db.Model):
             "product_creation_date": self.product_creation_date.isoformat(),
             "product_modification_date": self.product_modification_date.isoformat(),
             "product_name": self.name,
+            "product_brand": self.brand,
             "product_description": self.description,
             "product_purchase_price": self.purchase_price,
             "product_price": self.price,
@@ -560,8 +565,7 @@ class Product(db.Model):
             "product_image_id": [image.id for image in self.images] if self.images else []
         }
 
-    def get_total_stock(self):
-        return self.stock + sum(variant.stock for variant in self.variants)
+    
 
 
 class ProductVariant(db.Model):

@@ -1300,7 +1300,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 			//---------------------------------------------------------FUNCION PARA PRODUCTOS--------------------------------------------------------------------------
 			createProduct: async (productData) => {
-				// console.log("createProduct: ", productData)
+				console.log("createProduct: ", productData)
 				const myToken = localStorage.getItem("token");
 				const url = `${process.env.BACKEND_URL}/api/products`;
 
@@ -1323,6 +1323,33 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 				} catch (error) {
 					throw new Error(`Error creating product: ${error.message}`);
+				}
+			},
+
+			editProduct: async (productId, productData) => {
+				console.log("productId: ", productId, " editProduct: ", productData)
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(productData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error editing product: ${error.message}`);
 				}
 			},
 
@@ -1469,6 +1496,57 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 
+			updateAttribute: async (attributeId, attributeData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes/${attributeId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(attributeData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error updating attribute: ${error.message}`);
+				}
+			},
+
+			deleteAttribute: async (attributeId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/attributes/${attributeId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting attribute: ${error.message}`);
+				}
+			},
+
+
 			createAttributeValue: async (attributeId, valueData) => {
 				const myToken = localStorage.getItem("token");
 				const url = `${process.env.BACKEND_URL}/api/attributes/${attributeId}/values`;
@@ -1603,31 +1681,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 
-			editProduct: async (productId, productData) => {
-				const myToken = localStorage.getItem("token");
-				const url = `${process.env.BACKEND_URL}/api/products/${productId}`;
-
-				try {
-					const response = await fetch(url, {
-						method: "PUT",
-						headers: {
-							"Authorization": `Bearer ${myToken}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(productData),
-					});
-
-					const data = await response.json();
-
-					if (response.ok) {
-						return { success: true, data };
-					} else {
-						return { success: false, error: data.error || "An unknown error occurred" };
-					}
-				} catch (error) {
-					throw new Error(`Error editing product: ${error.message}`);
-				}
-			},
 
 			editProductVariant: async (variantId, variantData) => {
 				const myToken = localStorage.getItem("token");
