@@ -166,7 +166,7 @@ const CreateProductForm = () => {
             description: formData.description,
             purchase_price: parseFloat(formData.purchase_price),
             price: parseFloat(formData.price),
-            subcategory_id: formData.subcategory_id,
+            subcategory_id: parseInt(formData.subcategory_id), // Convertir a número
             is_active: formData.is_active,
         };
 
@@ -223,7 +223,17 @@ const CreateProductForm = () => {
             const validAttributes = [];
             for (const attr of attributes) {
                 if (attr.attribute_id && attr.attribute_value) {
-                    const valueResponse = await actions.createAttributeValue(attr.attribute_id, { value: attr.attribute_value });
+                    let valueResponse;
+
+                    // Check if attribute value already exists
+                    const existingAttribute = editingVariant ? editingVariant.attributes.find(a => a.attribute_id === attr.attribute_id && a.attribute_value === attr.attribute_value) : null;
+                    if (!existingAttribute) {
+                        valueResponse = await actions.createAttributeValue(attr.attribute_id, { value: attr.attribute_value });
+                    } else {
+                        // If attribute value already exists, use existing value ID
+                        valueResponse = { success: true, data: { value: { attribute_value_id: existingAttribute.attribute_value_id } } };
+                    }
+
                     if (valueResponse.success) {
                         validAttributes.push({
                             attribute_id: attr.attribute_id,
@@ -269,7 +279,7 @@ const CreateProductForm = () => {
             setSku("");
             setVariantPrice("");
             setVariantStock("");
-            setAttributes([]);
+            setAttributes([]); // Clear attributes
             setEditingVariant(null);
             setVariantImages([]);
             setCroppedVariantImages([]);
@@ -279,7 +289,6 @@ const CreateProductForm = () => {
             setShowModal(true);
         }
     };
-
 
     const handleCloseModal = () => {
         setShowModal(false);
@@ -533,6 +542,27 @@ const CreateProductForm = () => {
         </Tooltip>
     );
 
+    const handleDeleteVariantAttribute = async (variantId, attributeId) => {
+        try {
+            const response = await actions.deleteVariantAttribute(variantId, attributeId);
+            if (response.success) {
+                setModalMessage("Variant attribute deleted successfully");
+
+                // Remove the attribute from the state
+                setAttributes(attributes.filter(attr => attr.attribute_id !== attributeId));
+
+                // Optionally reload variant attributes from the server
+                // await actions.loadProductVariants(editingProduct.product_id);
+            } else {
+                setModalMessage(response.error);
+            }
+            setShowModal(true);
+        } catch (error) {
+            setModalMessage(`Error deleting variant attribute: ${error.message}`);
+            setShowModal(true);
+        }
+    };
+
     return (
         <Container className={styles.formContainer}>
             <h1 className={styles.titleComponent}>Product Manager</h1>
@@ -692,13 +722,19 @@ const CreateProductForm = () => {
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className={styles.label}>Product Images</Form.Label>
-                                    <Form.Control
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handleImageChange}
-                                        className={styles.input}
-                                    />
+                                    <div className={styles.uploadContainer}>
+                                        <Form.Label htmlFor="product-image-upload" className={styles.uploadIcon}>
+                                            <i className="fa-solid fa-upload"></i>
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            id="product-image-upload"
+                                            onChange={handleImageChange}
+                                            className={styles.uploadInput}
+                                        />
+                                    </div>
                                 </Form.Group>
                             </Col>
                         </Row>
@@ -774,14 +810,16 @@ const CreateProductForm = () => {
                                 </div>
                             </div>
                         )}
-                        <Button variant="primary" type="submit" className={styles.button}>
-                            {editingProduct ? 'Edit Product' : 'Create Product'}
-                        </Button>
-                        {editingProduct && (
-                            <Button variant="secondary" onClick={handleCancelEdit} className={styles.buttonCancelEdit}>
-                                Cancel Edit
+                        <div className={styles.buttonContainer}>
+                            <Button variant="primary" type="submit" className={styles.button}>
+                                {editingProduct ? 'Edit Product' : 'Create Product'}
                             </Button>
-                        )}
+                            {editingProduct && (
+                                <Button variant="secondary" onClick={handleCancelEdit} className={styles.buttonCancelEdit}>
+                                    Cancel Edit
+                                </Button>
+                            )}
+                        </div>
                     </Form>
                 </Card.Body>
             </Card>
@@ -790,7 +828,7 @@ const CreateProductForm = () => {
                     <h3>Variantes de producto</h3>
                     <Form onSubmit={handleVariantSubmit}>
                         <Row className="mb-3">
-                            <Col md={4}>
+                            <Col md={3}>
                                 <Form.Group>
                                     <OverlayTrigger
                                         placement="top"
@@ -807,7 +845,7 @@ const CreateProductForm = () => {
                                     />
                                 </Form.Group>
                             </Col>
-                            <Col md={4}>
+                            <Col md={3}>
                                 <Form.Group>
                                     <OverlayTrigger
                                         placement="top"
@@ -824,7 +862,7 @@ const CreateProductForm = () => {
                                     />
                                 </Form.Group>
                             </Col>
-                            <Col md={4}>
+                            <Col md={3}>
                                 <Form.Group>
                                     <OverlayTrigger
                                         placement="top"
@@ -841,10 +879,15 @@ const CreateProductForm = () => {
                                     />
                                 </Form.Group>
                             </Col>
+                            <Col md={3} className="d-flex align-items-end">
+                                <Button onClick={addNewAttributeField} className={styles.buttonAddAttribute}>
+                                    <i className="fa-solid fa-circle-plus"></i> Añadir Atributo
+                                </Button>
+                            </Col>
                         </Row>
                         {attributes.map((attr, index) => (
                             <Row key={index} className="mb-3">
-                                <Col md={6}>
+                                <Col md={5}>
                                     <Form.Group>
                                         <OverlayTrigger
                                             placement="top"
@@ -859,13 +902,13 @@ const CreateProductForm = () => {
                                             className={styles.input}
                                         >
                                             <option value="">Seleccionar Atributo</option>
-                                            {store.attributes.map(attr => (
-                                                <option key={attr.attribute_id} value={attr.attribute_id}>{attr.attribute_name}</option>
+                                            {store.attributes.map(attribute => (
+                                                <option key={attribute.attribute_id} value={attribute.attribute_id}>{attribute.attribute_name}</option>
                                             ))}
                                         </Form.Control>
                                     </Form.Group>
                                 </Col>
-                                <Col md={6}>
+                                <Col md={5}>
                                     <Form.Group>
                                         <OverlayTrigger
                                             placement="top"
@@ -882,25 +925,38 @@ const CreateProductForm = () => {
                                         />
                                     </Form.Group>
                                 </Col>
+                                <Col md={2} className="d-flex align-items-end">
+                                    <i
+                                        className="fa-solid fa-trash"
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => handleDeleteVariantAttribute(editingVariant.variant_id, attr.attribute_id)}
+                                        title="Eliminar atributo"
+                                    ></i>
+                                </Col>
                             </Row>
                         ))}
-                        <Button onClick={addNewAttributeField} className={styles.buttonAddAttribute}>
-                            <i className="fa-solid fa-circle-plus"></i> Añadir Atributo
-                        </Button>
-                        <Row className="mb-3">
-                            <Col>
-                                <Form.Group>
-                                    <Form.Label className={styles.label}>Variant Images</Form.Label>
-                                    <Form.Control
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handleVariantImageChange}
-                                        className={styles.input}
-                                    />
-                                </Form.Group>
-                            </Col>
-                        </Row>
+                        {editingVariant && (
+                            <Row className="mb-3">
+                                <Col md={3}>
+                                    <Form.Group>
+                                        <Form.Label className={styles.label}>Variant Images</Form.Label>
+                                        <div className={styles.uploadContainer}>
+                                            <Form.Label htmlFor="variant-image-upload" className={styles.uploadIcon}>
+                                                <i className="fa-solid fa-upload"></i>
+                                            </Form.Label>
+                                            <Form.Control
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                id="variant-image-upload"
+                                                onChange={handleVariantImageChange}
+                                                className={styles.uploadInput}
+                                            />
+                                        </div>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        )}
                         {variantImages.length > 0 && currentImageIndex < variantImages.length && (
                             <>
                                 <Row className="mb-3">
@@ -957,14 +1013,16 @@ const CreateProductForm = () => {
                                 </div>
                             </div>
                         )}
-                        <Button variant="primary" type="submit" className={styles.button}>
-                            {editingVariant ? 'Actualizar Variante' : 'Agregar Variante'}
-                        </Button>
-                        {editingVariant && (
-                            <Button variant="secondary" onClick={handleCancelEditVariant} className={styles.buttonCancelEdit}>
-                                Cancel Edit
+                        <div className={styles.buttonContainer}>
+                            <Button variant="primary" type="submit" className={styles.button}>
+                                {editingVariant ? 'Actualizar Variante' : 'Agregar Variante'}
                             </Button>
-                        )}
+                            {editingVariant && (
+                                <Button variant="secondary" onClick={handleCancelEditVariant} className={styles.buttonCancelEdit}>
+                                    Cancel Edit
+                                </Button>
+                            )}
+                        </div>
                         {editingProduct && (
                             <Table className={styles.table}>
                                 <thead>
@@ -1003,20 +1061,18 @@ const CreateProductForm = () => {
                                                 ))}
                                             </td>
                                             <td>
-                                                <Button
-                                                    variant="primary"
+                                                <i
+                                                    className="fa-solid fa-pen"
+                                                    style={{ marginLeft: '10px', cursor: 'pointer' }}
                                                     onClick={() => handleEditVariant(variant)}
-                                                    className={styles.editButton}
-                                                >
-                                                    Editar
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
+                                                    title="editar variante"
+                                                ></i>
+                                                <i
+                                                    className="fa-regular fa-trash-can"
+                                                    style={{ marginLeft: '10px', cursor: 'pointer' }}
                                                     onClick={() => handleDeleteVariant(variant.variant_id)}
-                                                    className={styles.deleteButton}
-                                                >
-                                                    Eliminar
-                                                </Button>
+                                                    title="eliminar variante"
+                                                ></i>
                                             </td>
                                         </tr>
                                     ))}
@@ -1093,20 +1149,18 @@ const CreateProductForm = () => {
                                         )}
                                     </td>
                                     <td>
-                                        <Button
-                                            variant="primary"
+                                        <i
+                                            className="fa-solid fa-pen"
+                                            style={{ marginLeft: '10px', cursor: 'pointer' }}
                                             onClick={() => handleEditProduct(product)}
-                                            className={styles.editButton}
-                                        >
-                                            Editar
-                                        </Button>
-                                        <Button
-                                            variant="danger"
+                                            title="editar producto"
+                                        ></i>
+                                        <i
+                                            className="fa-regular fa-trash-can"
+                                            style={{ marginLeft: '10px', cursor: 'pointer' }}
                                             onClick={() => handleDeleteProduct(product.product_id)}
-                                            className={styles.deleteButton}
-                                        >
-                                            Eliminar
-                                        </Button>
+                                            title="eliminar producto"
+                                        ></i>
                                     </td>
                                 </tr>
                                 {showVariants[product.product_id] && (

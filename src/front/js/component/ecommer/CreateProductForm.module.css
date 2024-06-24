@@ -206,7 +206,6 @@
     border: none;
     color: white;
     transition: background-color 0.3s;
-
 }
 
 .buttonAddAttribute:hover {
@@ -229,6 +228,28 @@
 
 .card {
     margin-bottom: 20px;
+}
+
+.uploadContainer {
+    display: flex;
+    align-items: center;
+}
+
+.uploadIcon {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--color-grey);
+    margin-right: 10px;
+}
+
+.uploadInput {
+    display: none;
+}
+
+.buttonContainer {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 /* Responsive styles for variant table */

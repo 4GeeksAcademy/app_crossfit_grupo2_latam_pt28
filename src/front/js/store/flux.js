@@ -1546,6 +1546,31 @@ const getState = ({ getStore, getActions, setStore }) => {
 				}
 			},
 
+			deleteVariantAttribute: async (variantId, attributeId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}/attributes/${attributeId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting variant attribute: ${error.message}`);
+				}
+			},
+
+
 
 			createAttributeValue: async (attributeId, valueData) => {
 				const myToken = localStorage.getItem("token");
@@ -1598,6 +1623,57 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 				} catch (error) {
 					throw new Error(`Error creating product variant: ${error.message}`);
+				}
+			},
+
+			editProductVariant: async (variantId, variantData) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "PUT",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(variantData),
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error editing product variant: ${error.message}`);
+				}
+			},
+
+
+			deleteProductVariant: async (variantId) => {
+				const myToken = localStorage.getItem("token");
+				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
+
+				try {
+					const response = await fetch(url, {
+						method: "DELETE",
+						headers: {
+							"Authorization": `Bearer ${myToken}`,
+						},
+					});
+
+					const data = await response.json();
+
+					if (response.ok) {
+						return { success: true, data };
+					} else {
+						return { success: false, error: data.error || "An unknown error occurred" };
+					}
+				} catch (error) {
+					throw new Error(`Error deleting product variant: ${error.message}`);
 				}
 			},
 
@@ -1678,58 +1754,6 @@ const getState = ({ getStore, getActions, setStore }) => {
 					}
 				} catch (error) {
 					console.error("Error loading attribute values:", error);
-				}
-			},
-
-
-			editProductVariant: async (variantId, variantData) => {
-				const myToken = localStorage.getItem("token");
-				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
-
-				try {
-					const response = await fetch(url, {
-						method: "PUT",
-						headers: {
-							"Authorization": `Bearer ${myToken}`,
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify(variantData),
-					});
-
-					const data = await response.json();
-
-					if (response.ok) {
-						return { success: true, data };
-					} else {
-						return { success: false, error: data.error || "An unknown error occurred" };
-					}
-				} catch (error) {
-					throw new Error(`Error editing product variant: ${error.message}`);
-				}
-			},
-
-
-			deleteProductVariant: async (variantId) => {
-				const myToken = localStorage.getItem("token");
-				const url = `${process.env.BACKEND_URL}/api/products/variants/${variantId}`;
-
-				try {
-					const response = await fetch(url, {
-						method: "DELETE",
-						headers: {
-							"Authorization": `Bearer ${myToken}`,
-						},
-					});
-
-					const data = await response.json();
-
-					if (response.ok) {
-						return { success: true, data };
-					} else {
-						return { success: false, error: data.error || "An unknown error occurred" };
-					}
-				} catch (error) {
-					throw new Error(`Error deleting product variant: ${error.message}`);
 				}
 			},
 

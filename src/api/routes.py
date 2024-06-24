@@ -2138,9 +2138,35 @@ def delete_product(product_id):
     if not product:
         return jsonify({'error': 'Product not found'}), 404
 
-    db.session.delete(product)
-    db.session.commit()
-    return jsonify({'message': 'Product deleted successfully'}), 200
+    try:
+        # Eliminar imágenes asociadas al producto
+        product_images = ProductImage.query.filter_by(product_id=product_id).all()
+        for image in product_images:
+            db.session.delete(image)
+
+        # Eliminar variantes asociadas al producto
+        variants = ProductVariant.query.filter_by(product_id=product_id).all()
+        for variant in variants:
+            variant_images = VariantImage.query.filter_by(variant_id=variant.id).all()
+            for image in variant_images:
+                db.session.delete(image)
+
+            # Eliminar atributos de variantes
+            variant_attributes = VariantAttribute.query.filter_by(variant_id=variant.id).all()
+            for attribute in variant_attributes:
+                db.session.delete(attribute)
+            
+            db.session.delete(variant)
+
+        # Eliminar el producto
+        db.session.delete(product)
+        db.session.commit()
+        
+        return jsonify({'message': 'Product deleted successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
 
 """
 Obtener Productos
@@ -2744,6 +2770,133 @@ def delete_variant_image(image_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+#-------------------------------------------------crear variante del producto------------------------------------------------------------------------------------
+
+# Crear variante de producto
+@api.route('/api/products/<int:product_id>/variants', methods=['POST'])
+@jwt_required()
+def create_product_variant(product_id):
+    data = request.get_json()
+    if not data or 'sku' not in data or 'price' not in data or 'stock' not in data:
+        return jsonify({'error': 'No data or required fields provided'}), 400
+
+    new_variant = ProductVariant(
+        product_id=product_id,
+        sku=data['sku'],
+        price=data['price'],
+        stock=data['stock']
+    )
+    try:
+        db.session.add(new_variant)
+        db.session.flush()
+
+        for attr in data.get('attributes', []):
+            new_attr = VariantAttribute(
+                variant_id=new_variant.id,
+                attribute_id=attr['attribute_id'],
+                attribute_value_id=attr['attribute_value_id']
+            )
+            db.session.add(new_attr)
+
+        db.session.commit()
+        return jsonify({'message': 'Product variant created successfully', 'variant': new_variant.serialize()}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+# Actualizar variante de producto
+@api.route('/products/variants/<int:variant_id>', methods=['PUT'])
+@jwt_required()
+def update_product_variant(variant_id):
+    data = request.get_json()
+    variant = ProductVariant.query.get(variant_id)
+    if not variant:
+        return jsonify({'error': 'Variant not found'}), 404
+
+    sku = data.get('sku')
+    price = data.get('price')
+    stock = data.get('stock')
+
+    if sku:
+        variant.sku = sku
+    if price is not None:
+        variant.price = price
+    if stock is not None:
+        variant.stock = stock
+
+    # Actualizar atributos de la variante
+    existing_attributes = {attr.attribute_id: attr for attr in variant.attributes}
+
+    for attr in data.get('attributes', []):
+        attribute_id = attr['attribute_id']
+        attribute_value_id = attr['attribute_value_id']
+        
+        if attribute_id in existing_attributes:
+            # Si el atributo ya existe, actualízalo
+            existing_attributes[attribute_id].attribute_value_id = attribute_value_id
+        else:
+            # Si el atributo no existe, créalo
+            new_attr = VariantAttribute(
+                variant_id=variant.id,
+                attribute_id=attribute_id,
+                attribute_value_id=attribute_value_id
+            )
+            db.session.add(new_attr)
+
+    db.session.commit()
+    return jsonify({'message': 'Variant updated successfully'}), 200
+
+    
+
+# Eliminar variante de producto
+@api.route('/products/variants/<int:variant_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product_variant(variant_id):
+    variant = ProductVariant.query.get(variant_id)
+    if not variant:
+        return jsonify({'error': 'Variant not found'}), 404
+
+    try:
+        # Eliminar atributos y valores asociados
+        variant_attributes = VariantAttribute.query.filter_by(variant_id=variant_id).all()
+        for attr in variant_attributes:
+            db.session.delete(attr)
+
+        # Eliminar imágenes asociadas
+        variant_images = VariantImage.query.filter_by(variant_id=variant_id).all()
+        for image in variant_images:
+            db.session.delete(image)
+
+        db.session.delete(variant)
+        db.session.commit()
+        return jsonify({'message': 'Variant and associated attributes and images deleted successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+    
+# Eliminar atributo de variante
+@api.route('/products/variants/<int:variant_id>/attributes/<int:attribute_id>', methods=['DELETE'])
+@jwt_required()
+def delete_variant_attribute(variant_id, attribute_id):
+    variant_attribute = VariantAttribute.query.filter_by(variant_id=variant_id, attribute_id=attribute_id).first()
+    if not variant_attribute:
+        return jsonify({'error': 'Variant attribute not found'}), 404
+
+    try:
+        db.session.delete(variant_attribute)
+        db.session.commit()
+        return jsonify({'message': 'Variant attribute deleted successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database error: ' + str(e)}), 500
+    
+# Obtener variantes de producto
+@api.route('/api/products/<int:product_id>/variants', methods=['GET'])
+@jwt_required()
+def get_product_variants(product_id):
+    variants = ProductVariant.query.filter_by(product_id=product_id).all()
+    return jsonify([var.serialize() for var in variants]), 200
+
 #-------------------------------------------------crear atributos del producto------------------------------------------------------------------------------------
 
 # Crear atributo
@@ -2780,40 +2933,6 @@ def create_attribute_value(attribute_id):
         db.session.rollback()
         return jsonify({'error': 'Database error: ' + str(e)}), 500
 
-# Crear variante de producto
-@api.route('/api/products/<int:product_id>/variants', methods=['POST'])
-@jwt_required()
-def create_product_variant(product_id):
-    data = request.get_json()
-    if not data or 'sku' not in data or 'price' not in data or 'stock' not in data:
-        return jsonify({'error': 'No data or required fields provided'}), 400
-
-    new_variant = ProductVariant(
-        product_id=product_id,
-        sku=data['sku'],
-        price=data['price'],
-        stock=data['stock']
-    )
-    try:
-        db.session.add(new_variant)
-        db.session.flush()
-
-        for attr in data.get('attributes', []):
-            new_attr = VariantAttribute(
-                variant_id=new_variant.id,
-                attribute_id=attr['attribute_id'],
-                attribute_value_id=attr['attribute_value_id']
-            )
-            db.session.add(new_attr)
-
-        db.session.commit()
-        return jsonify({'message': 'Product variant created successfully', 'variant': new_variant.serialize()}), 201
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'Database error: ' + str(e)}), 500
-
-
-
 # Obtener atributos
 @api.route('/attributes', methods=['GET'])
 @jwt_required()
@@ -2828,62 +2947,6 @@ def get_attribute_values(attribute_id):
     values = AttributeValue.query.filter_by(attribute_id=attribute_id).all()
     return jsonify([val.serialize() for val in values]), 200
 
-# Obtener variantes de producto
-@api.route('/api/products/<int:product_id>/variants', methods=['GET'])
-@jwt_required()
-def get_product_variants(product_id):
-    variants = ProductVariant.query.filter_by(product_id=product_id).all()
-    return jsonify([var.serialize() for var in variants]), 200
-
-# Actualizar variante de producto
-@api.route('/products/variants/<int:variant_id>', methods=['PUT'])
-@jwt_required()
-def update_product_variant(variant_id):
-    data = request.get_json()
-    variant = ProductVariant.query.get(variant_id)
-    if not variant:
-        return jsonify({'error': 'Variant not found'}), 404
-
-    sku = data.get('sku')
-    price = data.get('price')
-    stock = data.get('stock')
-
-    if sku:
-        variant.sku = sku
-    if price is not None:
-        variant.price = price
-    if stock is not None:
-        variant.stock = stock  # Fix: Ensure stock is set correctly
-
-    db.session.commit()
-    return jsonify({'message': 'Variant updated successfully'}), 200
-
-
-# Eliminar variante de producto
-@api.route('/products/variants/<int:variant_id>', methods=['DELETE'])
-@jwt_required()
-def delete_product_variant(variant_id):
-    variant = ProductVariant.query.get(variant_id)
-    if not variant:
-        return jsonify({'error': 'Variant not found'}), 404
-
-    try:
-        # Eliminar atributos y valores asociados
-        variant_attributes = VariantAttribute.query.filter_by(variant_id=variant_id).all()
-        for attr in variant_attributes:
-            db.session.delete(attr)
-
-        # Eliminar imágenes asociadas
-        variant_images = VariantImage.query.filter_by(variant_id=variant_id).all()
-        for image in variant_images:
-            db.session.delete(image)
-
-        db.session.delete(variant)
-        db.session.commit()
-        return jsonify({'message': 'Variant and associated attributes and images deleted successfully'}), 200
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'error': 'Database error: ' + str(e)}), 500
 
 @api.route('/attributes/<int:attribute_id>', methods=['PUT'])
 @jwt_required()
@@ -2919,3 +2982,5 @@ def delete_attribute(attribute_id):
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({'error': 'Database error: ' + str(e)}), 500
+
+

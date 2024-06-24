@@ -253,6 +253,15 @@ class MessageRecipient(Base):
         return '<MessageRecipient %r>' % (self.message_id, self.recipient_id)
 
 
+class Category(Base):
+    __tablename__ = 'category'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+
+    def __repr__(self):
+        return '<Category %r>' % self.id
+
 class SubCategory(Base):
     __tablename__ = 'subcategory'
     id = Column(Integer, primary_key=True)
@@ -265,10 +274,32 @@ class SubCategory(Base):
     def __repr__(self):
         return '<SubCategory %r>' % self.id
 
+class Attribute(Base):
+    __tablename__ = 'attribute'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+
+    def __repr__(self):
+        return '<Attribute %r>' % self.id
+
+class AttributeValue(Base):
+    __tablename__ = 'attribute_value'
+    id = Column(Integer, primary_key=True)
+    attribute_id = Column(Integer, ForeignKey('attribute.id'), nullable=False)
+    value = Column(String(255), nullable=False)
+    
+    attribute = relationship('Attribute', backref='attribute_values')
+
+    def __repr__(self):
+        return '<AttributeValue %r>' % self.id
+
 class Product(Base):
     __tablename__ = 'product'
     id = Column(Integer, primary_key=True)
+    product_creation_date = Column(DateTime, default=datetime.utcnow)
+    product_modification_date = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = Column(String(255), nullable=False)
+    brand = Column(String(255), nullable=True, default="")
     description = Column(Text, nullable=True)
     purchase_price = Column(Float, nullable=True)
     price = Column(Float, nullable=False)
@@ -277,26 +308,59 @@ class Product(Base):
     is_active = Column(Boolean, default=True)
     
     subcategory = relationship('SubCategory', backref='products')
-    images = relationship('ProductImage', backref='product', lazy='dynamic')
+    variants = relationship('ProductVariant', backref='parent_product', lazy='dynamic')
+    images = relationship('ProductImage', backref='image_product', lazy='dynamic')
 
     def __repr__(self):
         return '<Product %r>' % self.id
 
-class Category(Base):
-    __tablename__ = 'category'
+class ProductVariant(Base):
+    __tablename__ = 'product_variant'
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
+    product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
+    sku = Column(String(100), nullable=False)
+    price = Column(Float, nullable=False)
+    stock = Column(Integer, nullable=False)
+    
+    product = relationship('Product', backref='product_variants')
+    attributes = relationship('VariantAttribute', backref='variant', lazy='dynamic')
+    images = relationship('VariantImage', backref='variant', lazy='dynamic')
 
     def __repr__(self):
-        return '<Category %r>' % self.id
+        return '<ProductVariant %r>' % self.id
 
+class VariantAttribute(Base):
+    __tablename__ = 'variant_attribute'
+    variant_id = Column(Integer, ForeignKey('product_variant.id'), primary_key=True)
+    attribute_id = Column(Integer, ForeignKey('attribute.id'), primary_key=True)
+    attribute_value_id = Column(Integer, ForeignKey('attribute_value.id'), primary_key=True)
+    
+    attribute = relationship('Attribute', backref='variant_attributes')
+    attribute_value = relationship('AttributeValue', backref='variant_attributes')
+
+    def __repr__(self):
+        return '<VariantAttribute %r>' % self.variant_id
+
+class VariantImage(Base):
+    __tablename__ = 'variant_image'
+    id = Column(Integer, primary_key=True)
+    variant_id = Column(Integer, ForeignKey('product_variant.id'), nullable=False)
+    image_data = Column(LargeBinary, nullable=False)
+    
+    def image_url(self):
+        return f"data:image/jpeg;base64,{base64.b64encode(self.image_data).decode('utf-8')}"
+
+    def __repr__(self):
+        return '<VariantImage %r>' % self.id
 
 class ProductImage(Base):
     __tablename__ = 'product_image'
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
     image_data = Column(LargeBinary, nullable=False)
+    
+    def image_url(self):
+        return f"data:image/jpeg;base64,{base64.b64encode(self.image_data).decode('utf-8')}"
 
     def __repr__(self):
         return '<ProductImage %r>' % self.id
@@ -338,7 +402,7 @@ class OrderDetail(Base):
     product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
-
+    
     order = relationship('Order', backref='order_details')
     product = relationship('Product', backref='order_details')
 
@@ -358,7 +422,7 @@ class EcommercePayment(Base):
     shipping_type = Column(String(50), nullable=False)
     shipping_address = Column(String(255), nullable=True)
     estimated_delivery_date = Column(DateTime, nullable=True)
-
+    
     user = relationship('User', backref='ecommerce_payments')
     order = relationship('Order', backref='ecommerce_payments')
 
@@ -398,13 +462,13 @@ class ProductPromotion(Base):
     id = Column(Integer, primary_key=True)
     product_id = Column(Integer, ForeignKey('product.id'), nullable=False)
     promotion_id = Column(Integer, ForeignKey('promotion.id'), nullable=False)
-
+    
     product = relationship('Product', backref='product_promotions')
     promotion = relationship('Promotion', backref='product_promotions')
 
     def __repr__(self):
         return '<ProductPromotion %r>' % self.id
-
+    
 # Generate the diagram
 try:
     result = render_er(Base, 'diagram.png')

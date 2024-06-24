@@ -562,7 +562,9 @@ class Product(db.Model):
             "product_category": self.subcategory.category.name if self.subcategory and self.subcategory.category else "N/A",
             "product_subcategory": self.subcategory.name if self.subcategory else "N/A",
             "product_images": [image.image_url() for image in self.images] if self.images else [],
-            "product_image_id": [image.id for image in self.images] if self.images else []
+            "product_image_id": [image.id for image in self.images] if self.images else [],
+            "variants": [variant.serialize() for variant in self.variants] if self.variants else []
+
         }
 
     
